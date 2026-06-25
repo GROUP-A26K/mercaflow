@@ -1,0 +1,19 @@
+package.json
+  s_70379603eedaef::t_edce140bff9eab 17-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.13",
+  "base_commit_sha": "e431c83b1df94c2b05507842384643f3169cfc28",
+  "prompts": {},
+  "sessions": {
+    "s_70379603eedaef": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "16254d7e-eb7f-43f0-b13d-7bda8be6a4a3",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
