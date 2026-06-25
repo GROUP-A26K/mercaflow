@@ -137,6 +137,7 @@ lib/
 - Oublier `await` sur `cookies()`/`params`/`searchParams` → erreur Next 16.
 - Sans `proxy.ts` (clerkMiddleware), `auth()`/`currentUser()` lèvent une erreur.
 - **RLS Supabase sous Clerk** : exige d'activer "Third-Party Auth" Clerk dans les dashboards Clerk ET Supabase, sinon les requêtes serveur tombent en rôle `anon`. Policies sur `auth.jwt()->>'sub'` (= user id Clerk).
+- **Pages auth-gated = dynamiques** : une page qui lit le token Clerk (via Supabase `accessToken`/`headers()`) ne peut PAS être prérendue statiquement → le build plante. Fix : `export const dynamic = "force-dynamic"` (posé sur `app/(app)/layout.tsx`, hérité par tout le segment).
 - `NEXT_PUBLIC_SITE_URL` absente → canonical/OG/sitemap pointent vers localhost en prod.
 - `next/image` refuse les domaines distants sans `images.remotePatterns` dans `next.config.ts`.
 - `error.tsx`/`global-error.tsx` : Next 16 nomme la prop de relance `unstable_retry` (PAS `reset`).

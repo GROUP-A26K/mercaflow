@@ -9,7 +9,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-mono);
+  --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-heading);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -56,14 +56,14 @@
   --card-foreground: oklch(0.145 0.008 326);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0.008 326);
-  --primary: oklch(0.5 0.134 242.749);
-  --primary-foreground: oklch(0.977 0.013 236.62);
+  --primary: #202020;
+  --primary-foreground: oklch(0.985 0.002 247.839); /* gray-50 */
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.96 0.003 325.6);
   --muted-foreground: oklch(0.542 0.034 322.5);
-  --accent: oklch(0.5 0.134 242.749);
-  --accent-foreground: oklch(0.977 0.013 236.62);
+  --accent: #202020;
+  --accent-foreground: oklch(0.985 0.002 247.839); /* gray-50 */
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0.005 325.62);
   --input: oklch(0.922 0.005 325.62);
@@ -73,7 +73,7 @@
   --chart-3: oklch(0.558 0.288 302.321);
   --chart-4: oklch(0.496 0.265 301.924);
   --chart-5: oklch(0.438 0.218 303.724);
-  --radius: 0.45rem;
+  --radius: 0.75rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0.008 326);
   --sidebar-primary: oklch(0.588 0.158 241.966);
@@ -91,14 +91,14 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.212 0.019 322.12);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.443 0.11 240.79);
-  --primary-foreground: oklch(0.977 0.013 236.62);
+  --primary: oklch(0.92 0.004 286.32); /* gray-200 — inversé en sombre pour rester visible */
+  --primary-foreground: oklch(0.21 0.034 264.665); /* gray-900 */
   --secondary: oklch(0.274 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.263 0.024 320.12);
   --muted-foreground: oklch(0.711 0.019 323.02);
-  --accent: oklch(0.443 0.11 240.79);
-  --accent-foreground: oklch(0.977 0.013 236.62);
+  --accent: oklch(0.92 0.004 286.32); /* gray-200 */
+  --accent-foreground: oklch(0.21 0.034 264.665); /* gray-900 */
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
@@ -124,8 +124,43 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Halos colorés diffus derrière les surfaces "glass" pour qu'elles aient
+       quelque chose à réfracter. Fixés au viewport pour rester en place au scroll. */
+    background-image:
+      radial-gradient(
+        45rem 45rem at 100% -10%,
+        color-mix(in oklch, var(--primary), transparent 82%),
+        transparent 60%
+      ),
+      radial-gradient(
+        40rem 40rem at -10% 0%,
+        color-mix(in oklch, var(--chart-2), transparent 86%),
+        transparent 55%
+      ),
+      radial-gradient(
+        42rem 42rem at 50% 118%,
+        color-mix(in oklch, var(--chart-1), transparent 88%),
+        transparent 60%
+      );
+    background-attachment: fixed;
+    background-repeat: no-repeat;
   }
   html {
-    @apply font-mono;
+    @apply font-sans;
   }
+}
+
+/* Surface "glass" réutilisable : fond translucide + flou d'arrière-plan.
+   Les bordures/ombres restent gérées par des utilitaires Tailwind (ring/shadow)
+   pour ne pas entrer en conflit avec la composition box-shadow de Tailwind. */
+@utility glass {
+  background-color: color-mix(in oklch, var(--card), transparent 32%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(180%);
+}
+
+@utility glass-strong {
+  background-color: color-mix(in oklch, var(--card), transparent 16%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  backdrop-filter: blur(24px) saturate(200%);
 }
