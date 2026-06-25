@@ -1,6 +1,5 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import { shadcn } from "@clerk/ui/themes";
-import Script from "next/script";
 import { Geist, Geist_Mono, Manrope } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
@@ -38,8 +37,6 @@ export default function RootLayout({
         </ClerkProvider>
         <JsonLd data={organizationJsonLd()} />
         <JsonLd data={websiteJsonLd()} />
-        {/* Barre de comparaison /ui (temporaire — retirée après sélection finale). */}
-        <Script src="https://ui.sh/ui-picker.js" />
       </body>
     </html>
   );
