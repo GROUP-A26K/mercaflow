@@ -1,0 +1,29 @@
+{
+  "mcpServers": {
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/"
+    },
+    "linear": {
+      "type": "http",
+      "url": "https://mcp.linear.app/mcp"
+    },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp"
+    },
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp"
+    },
+    "infisical": {
+      "command": "npx",
+      "args": ["-y", "@infisical/mcp"],
+      "env": {
+        "INFISICAL_HOST_URL": "${INFISICAL_HOST_URL:-https://eu.infisical.com}",
+        "INFISICAL_UNIVERSAL_AUTH_CLIENT_ID": "${INFISICAL_UNIVERSAL_AUTH_CLIENT_ID}",
+        "INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET": "${INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET}"
+      }
+    }
+  }
+}
