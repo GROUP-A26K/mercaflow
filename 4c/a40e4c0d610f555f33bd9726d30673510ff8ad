@@ -1,0 +1,27 @@
+.nvmrc
+  s_70379603eedaef::t_1b538dd5fe174d 1
+.claude/settings.json
+  s_70379603eedaef::t_8aea8840e19127 1-48
+.env.example
+  s_70379603eedaef::t_d9377afddd1c2d 1-23
+.mcp.json
+  s_70379603eedaef::t_d7fc2256f57426 1-29
+.gitignore
+  s_70379603eedaef::t_3ef2efb6c0bc0b 35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.13",
+  "base_commit_sha": "4ca40e4c0d610f555f33bd9726d30673510ff8ad",
+  "prompts": {},
+  "sessions": {
+    "s_70379603eedaef": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "16254d7e-eb7f-43f0-b13d-7bda8be6a4a3",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
