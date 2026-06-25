@@ -1,0 +1,19 @@
+.github/workflows/ci.yml
+  s_70379603eedaef::t_eb08a8067ad01f 1-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.13",
+  "base_commit_sha": "e26e6da58095363ab1cc5e39f7270f07c2625e49",
+  "prompts": {},
+  "sessions": {
+    "s_70379603eedaef": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "16254d7e-eb7f-43f0-b13d-7bda8be6a4a3",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
