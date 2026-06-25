@@ -166,3 +166,124 @@
   -webkit-backdrop-filter: blur(24px) saturate(200%);
   backdrop-filter: blur(24px) saturate(200%);
 }
+
+/* Bordure lumineuse animée : un dégradé conique tourne autour de l'élément.
+   `@property` rend l'angle animable ; la couche est floutée pour donner le halo. */
+@property --border-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes border-glow-spin {
+  to {
+    --border-angle: 360deg;
+  }
+}
+
+/* Remplissage de la barre de progression (métrique active auto-défilante). */
+@keyframes progress-fill {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+/* Liseré décoratif fin (1px) : le dégradé n'apparaît QUE sur la bordure grâce au masque.
+   À combiner avec `relative` (et `rounded-*` qui définit le rayon hérité). */
+.fx-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  padding: 1px;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Shimmer : un éclat clair file le long de la bordure. */
+.fx-shimmer::before {
+  background: conic-gradient(
+    from var(--border-angle),
+    transparent 72%,
+    color-mix(in oklch, var(--foreground), transparent 12%) 86%,
+    transparent 92%
+  );
+  animation: border-glow-spin 4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-shimmer::before {
+    animation: none;
+  }
+}
+
+/* Ouverture douce du menu Resources. Le DropdownMenuContent shadcn force
+   `animate-none !important` (layer `utilities`). Pour les déclarations `!important`,
+   la cascade des layers est INVERSÉE : un `!important` dans un layer déclaré AVANT
+   (`base`) l'emporte. On ré-active donc l'animation UNIQUEMENT ici, sans toucher
+   les autres menus. */
+@keyframes resources-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.375rem) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@layer base {
+  .resources-menu[data-state="open"] {
+    animation: resources-menu-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .resources-menu[data-state="open"] {
+      animation: none !important;
+    }
+  }
+}
+
+/* Micro-animations des icônes de la section Benefits (case active uniquement).
+   Appliquées via `motion-safe:animate-[...]` → désactivées si prefers-reduced-motion. */
+@keyframes icon-pulse-soft {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+}
+
+@keyframes icon-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes icon-wiggle {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-7deg);
+  }
+  75% {
+    transform: rotate(7deg);
+  }
+}

@@ -32,7 +32,7 @@ devienne le « Domain Authority » du commerce agentique.
   (composant `<Show when="signed-in|signed-out">`, pas `SignedIn`/`SignedOut`). Thème shadcn appliqué via `appearance={{theme: shadcn}}`.
 - **Supabase** (`@supabase/supabase-js`) — DB UNIQUEMENT (pas d'auth). Identité via **JWT Clerk passé en `accessToken`** (Third-Party Auth), PAS via cookies. `server.ts` (serveur, token via `auth().getToken()`) ; `client.ts` expose `useSupabaseClient()` (token via session Clerk).
   Clé au nouveau format `sb_publishable_…` : OK pour requêtes de tables, mais PAS pour l'endpoint racine `/rest/v1/` (exige clé secrète).
-- **Resend** (`resend`) — email transactionnel, CÂBLÉ dans `lib/mail/` : `client.ts` (getResend lazy, server-only), `send.ts` (`sendEmail`), `templates.ts` (gabarits HTML purs). Envoi depuis code serveur uniquement.
+- **Resend** (`resend`) — email transactionnel, CÂBLÉ dans `lib/mail/` : `client.ts` (getResend lazy, server-only), `send.ts` (`sendEmail`), `templates.ts` (gabarits HTML purs). Déclencheurs : webhook Clerk `app/api/webhooks/clerk/route.ts` (email de bienvenue sur `user.created`) + page `/settings` (bouton email de test). Envoi serveur uniquement.
 - Icônes : `@tabler/icons-react`
 - Polices : Geist Sans, Geist Mono, Manrope (heading) via `next/font/google`
 
@@ -41,7 +41,8 @@ Modèle complet dans `.env.example` (à copier en `.env.local`, jamais commité)
 - **SEO** : `NEXT_PUBLIC_SITE_URL` ⚠️ REQUIS — actuellement ABSENTE de `.env.local`, donc le SEO retombe sur `localhost:3000` (canonical/OG/sitemap cassés en prod).
 - **Clerk** : `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `NEXT_PUBLIC_CLERK_SIGN_IN_URL`/`SIGN_UP_URL` (`/sign-in`, `/sign-up`) + `*_FALLBACK_REDIRECT_URL` (`/dashboard`).
 - **Supabase** : `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-- **Resend** : `RESEND_API_KEY`, `RESEND_FROM_EMAIL` (domaine vérifié) — absents de `.env.local` → envoi email KO tant que non renseignés.
+- **Resend** : `RESEND_API_KEY` (présent), `RESEND_FROM_EMAIL` (domaine vérifié ; sinon fallback `onboarding@resend.dev` qui n'envoie qu'à l'email du compte Resend).
+- **Webhook Clerk** : `CLERK_WEBHOOK_SIGNING_SECRET` (Clerk Dashboard → Webhooks) — requis pour l'email de bienvenue.
 
 ## Règles Next 16 (à respecter absolument)
 - **Server-first** : tout est Server Component par défaut. `'use client'` UNIQUEMENT si state /

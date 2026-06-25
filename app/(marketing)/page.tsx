@@ -1,9 +1,12 @@
-import Link from "next/link";
-import { IconArrowRight, IconSparkles } from "@tabler/icons-react";
+import { IconSparkles } from "@tabler/icons-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ComponentShowcase } from "@/components/blocks/component-showcase";
+import { AiLogoCycler } from "@/components/blocks/ai-logo-cycler";
+import { Benefits } from "@/components/blocks/benefits";
+import { BrandMarquee } from "@/components/blocks/brand-marquee";
+import { HowItWorks } from "@/components/blocks/how-it-works";
+import { HeroSearch } from "@/components/blocks/hero-search";
+import { SocialProof } from "@/components/blocks/social-proof";
 import { JsonLd } from "@/components/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { webPageJsonLd } from "@/lib/seo/json-ld";
@@ -13,8 +16,18 @@ export const metadata = buildMetadata({ path: "/" });
 // Page d'accueil publique → URL `/` (le groupe (marketing) n'ajoute rien au chemin).
 export default function HomePage() {
   return (
-    <main className="isolate mx-auto w-full max-w-6xl flex-1 px-6 py-16 sm:py-24">
+    <main className="relative isolate mx-auto w-full max-w-6xl flex-1 px-6 py-16 sm:py-24">
       <JsonLd data={webPageJsonLd({ name: "Accueil", path: "/" })} />
+
+      {/* Décor de fond du hero : lignes verticales fines en gradient */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 mx-auto flex h-[40rem] max-w-4xl justify-between px-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div
+            key={i}
+            className="h-full w-px bg-linear-to-b from-transparent via-foreground/6 to-transparent"
+          />
+        ))}
+      </div>
 
       {/* Hero */}
       <section className="mx-auto flex max-w-3xl flex-col items-center gap-6 text-center">
@@ -22,43 +35,58 @@ export default function HomePage() {
           <IconSparkles className="size-3.5 text-primary" />
           Intelligence produit · Commerce agentique
         </Badge>
-        <h1 className="font-heading text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
+        <h1 className="font-heading text-4xl font-semibold tracking-tight text-balance text-foreground sm:text-6xl">
           Vos produits sont-ils{" "}
-          <span className="bg-linear-to-r from-primary to-chart-2 bg-clip-text text-transparent">
-            recommandés par l&apos;IA
-          </span>{" "}
+          <span className="text-muted-foreground">recommandés par </span>
+          <AiLogoCycler />{" "}
           ?
         </h1>
         <p className="max-w-xl text-lg text-muted-foreground text-pretty">
           Mercaflow révèle quels SKU sont recommandés ou invisibles dans ChatGPT,
-          Perplexity et Gemini — et génère les corrections qui les rendent
+          Perplexity et Gemini, et génère les corrections qui les rendent
           recommandables.
         </p>
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <Button asChild size="lg">
-            <Link href="/dashboard">
-              Lancer un audit
-              <IconArrowRight />
-            </Link>
-          </Button>
-          <Button asChild size="lg" variant="outline" className="glass">
-            <Link href="/dashboard">Voir le tableau de bord</Link>
-          </Button>
+        <HeroSearch />
+
+        {/* Séparateur : même couleur/style que les lignes de fond (dégradé foreground/6) */}
+        <div className="h-px w-full max-w-xs bg-linear-to-r from-transparent via-foreground/6 to-transparent" />
+
+        <SocialProof />
+      </section>
+
+      {/* Carrousel de marques */}
+      <section className="mt-16 sm:mt-20">
+        <BrandMarquee />
+      </section>
+
+      {/* Benefits (style peec.ai), boxé en "well" gris clair */}
+      <section className="mt-20 sm:mt-28">
+        <div className="rounded-3xl border border-foreground/10 bg-muted/40 p-8 sm:p-12">
+          <div className="mb-10 flex max-w-2xl flex-col gap-2">
+            <h2 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
+              Understand how AI sees your products
+            </h2>
+            <p className="text-muted-foreground">
+              We track the metrics that matter most in AI search.
+            </p>
+          </div>
+          <Benefits />
         </div>
       </section>
 
-      {/* Kit de composants */}
+      {/* How it works */}
       <section className="mt-20 sm:mt-28">
-        <div className="mb-8 flex flex-col gap-1">
-          <h2 className="font-heading text-2xl font-semibold tracking-tight">
-            Kit de composants
+        <div className="mb-10 flex flex-col items-center gap-2 text-center">
+          <h2 className="font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
+            How it works
           </h2>
           <p className="text-muted-foreground">
-            Le design system du projet, en style glass.
+            From catalog to AI-recommended in three steps.
           </p>
         </div>
-        <ComponentShowcase />
+        <HowItWorks />
       </section>
+
     </main>
   );
 }
