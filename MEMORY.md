@@ -30,9 +30,9 @@ devienne le « Domain Authority » du commerce agentique.
 - **Clerk** (`@clerk/nextjs` + `@clerk/ui`) — AUTHENTIFICATION. Setup via `clerk init` (app `app_3FcUOejrj8vsGwnDOOwCb9PPpZ5`).
   Garde dans `proxy.ts` (`clerkMiddleware`), routes `/sign-in` & `/sign-up`, contrôles dans `components/blocks/site-header.tsx`
   (composant `<Show when="signed-in|signed-out">`, pas `SignedIn`/`SignedOut`). Thème shadcn appliqué via `appearance={{theme: shadcn}}`.
-- **Supabase** (`@supabase/ssr`) — DB UNIQUEMENT (pas d'auth). Clients dans `lib/supabase/` (`client.ts` navigateur, `server.ts` serveur).
+- **Supabase** (`@supabase/supabase-js`) — DB UNIQUEMENT (pas d'auth). Identité via **JWT Clerk passé en `accessToken`** (Third-Party Auth), PAS via cookies. `server.ts` (serveur, token via `auth().getToken()`) ; `client.ts` expose `useSupabaseClient()` (token via session Clerk).
   Clé au nouveau format `sb_publishable_…` : OK pour requêtes de tables, mais PAS pour l'endpoint racine `/rest/v1/` (exige clé secrète).
-- **Resend** (`resend`) — email transactionnel. Dépendance présente mais PAS encore câblée (aucun import).
+- **Resend** (`resend`) — email transactionnel, CÂBLÉ dans `lib/mail/` : `client.ts` (getResend lazy, server-only), `send.ts` (`sendEmail`), `templates.ts` (gabarits HTML purs). Envoi depuis code serveur uniquement.
 - Icônes : `@tabler/icons-react`
 - Polices : Geist Sans, Geist Mono, Manrope (heading) via `next/font/google`
 
@@ -41,6 +41,7 @@ Modèle complet dans `.env.example` (à copier en `.env.local`, jamais commité)
 - **SEO** : `NEXT_PUBLIC_SITE_URL` ⚠️ REQUIS — actuellement ABSENTE de `.env.local`, donc le SEO retombe sur `localhost:3000` (canonical/OG/sitemap cassés en prod).
 - **Clerk** : `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `NEXT_PUBLIC_CLERK_SIGN_IN_URL`/`SIGN_UP_URL` (`/sign-in`, `/sign-up`) + `*_FALLBACK_REDIRECT_URL` (`/dashboard`).
 - **Supabase** : `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- **Resend** : `RESEND_API_KEY`, `RESEND_FROM_EMAIL` (domaine vérifié) — absents de `.env.local` → envoi email KO tant que non renseignés.
 
 ## Règles Next 16 (à respecter absolument)
 - **Server-first** : tout est Server Component par défaut. `'use client'` UNIQUEMENT si state /
@@ -99,10 +100,10 @@ lib/
   mutations via Server Actions (`'use server'`).
 - `lib/data/auth.ts` = pont vers Clerk (`auth()`, `currentUser()`), PAS Supabase. `getCurrentUser()`
   renvoie `{id, email}|null` ; `requireUser()` redirige vers `/sign-in`. Déconnexion via `<SignOutButton>` Clerk.
-- `lib/supabase/server.ts` côté serveur (await cookies), `client.ts` côté navigateur.
+- `lib/supabase/server.ts` (serveur, token Clerk via `accessToken`) ; `client.ts` → `useSupabaseClient()` ('use client', token via session Clerk).
 
 ## SEO (exigence permanente — détails dans AGENTS.md)
-- Source de vérité : `lib/seo/config.ts` (nom, URL via `NEXT_PUBLIC_SITE_URL`, description, réseaux). ⚠️ description = placeholder, à remplir.
+- Source de vérité : `lib/seo/config.ts` (nom, URL via `NEXT_PUBLIC_SITE_URL`, description, réseaux). Description renseignée ; liens sociaux à compléter quand dispo.
 - `lib/seo/metadata.ts` : `rootMetadata` (défauts globaux, metadataBase, OG/Twitter, robots) + `buildMetadata({title, description, path, image, noIndex})` à exporter depuis CHAQUE `page.tsx`.
 - `lib/seo/json-ld.ts` + `components/seo/json-ld.tsx` : données structurées schema.org. `Organization`+`WebSite` globaux (root layout) ; `webPageJsonLd`/`breadcrumbJsonLd` par page.
 - Fichiers `app/` : `opengraph-image.tsx` & `twitter-image.tsx` (générés via `next/og`, rendu partagé `lib/seo/og-image.tsx`), `sitemap.ts`, `robots.ts`, `manifest.ts`. **Ajouter chaque nouvelle route publique au `sitemap.ts`.**
@@ -123,8 +124,9 @@ lib/
 ## Structure actuelle (réel)
 - `app/` : root `layout.tsx` (ClerkProvider + thème shadcn + métadonnées SEO + JSON-LD), groupes `(marketing)` (accueil), `(auth)` (`sign-in`/`sign-up` catch-all Clerk), `(app)` (`layout` garde d'auth + `dashboard`). Fichiers SEO (sitemap/robots/manifest/og/twitter).
 - `components/` : `ui/button.tsx`, `blocks/site-header.tsx`, `providers/index.tsx`, `seo/json-ld.tsx`.
-- `hooks/use-mounted.ts` (via `useSyncExternalStore`). `lib/` : `utils`, `types`, `supabase/`, `data/auth.ts`, `seo/`, `validations/` (README, zod à installer au 1er schéma).
+- `hooks/use-mounted.ts` (via `useSyncExternalStore`). `lib/` : `utils`, `types`, `supabase/`, `data/auth.ts`, `seo/`, `mail/` (Resend), `validations/` (README, zod à installer au 1er schéma).
 - Boundaries : `app/{loading,error,not-found}.tsx` + `app/(app)/{loading,error}.tsx`.
+- Démo Clerk→Supabase : `app/(app)/notes/` (page + form + action), `lib/data/notes.ts`, `lib/validations/notes.ts`, migration `supabase/migrations/0001_notes_demo.sql`. Sert à valider la RLS ; supprimable une fois la vraie data en place.
 - `proxy.ts` (Clerk middleware). Tests dans `tests/unit` + `tests/e2e`. `.env.example` documente les variables requises.
 
 ## État d'avancement / TODO
@@ -134,6 +136,7 @@ lib/
 ## Pièges connus
 - Oublier `await` sur `cookies()`/`params`/`searchParams` → erreur Next 16.
 - Sans `proxy.ts` (clerkMiddleware), `auth()`/`currentUser()` lèvent une erreur.
+- **RLS Supabase sous Clerk** : exige d'activer "Third-Party Auth" Clerk dans les dashboards Clerk ET Supabase, sinon les requêtes serveur tombent en rôle `anon`. Policies sur `auth.jwt()->>'sub'` (= user id Clerk).
 - `NEXT_PUBLIC_SITE_URL` absente → canonical/OG/sitemap pointent vers localhost en prod.
 - `next/image` refuse les domaines distants sans `images.remotePatterns` dans `next.config.ts`.
 - `error.tsx`/`global-error.tsx` : Next 16 nomme la prop de relance `unstable_retry` (PAS `reset`).
