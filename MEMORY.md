@@ -3,7 +3,24 @@
 Contexte durable du projet, lu à chaque session. À éditer librement.
 
 ## Objectif
-<!-- À remplir : à quoi sert Mercaflow, en 1-2 phrases. -->
+**Mercaflow = couche d'intelligence + activation produit pour le commerce agentique.** On dit aux marques
+quels SKU sont recommandés (ou invisibles) dans ChatGPT, Perplexity, Gemini, *pourquoi*, et on **génère les
+corrections** qui les rendent recommandables — au **niveau produit (SKU), pas marque**. Différence clé vs les
+concurrents (Profound, Peec, Semrush AIO) : on **mesure ET on corrige** (Fix Engine), orienté merchandising/
+e-commerce, multi-catalogue (Shopify + Merchant Center + PIM + avis + marketplaces). Stade : pre-seed (juin 2026).
+Fondateur : Jean-Baptiste Pavageau (jb@mercaflow.ai).
+
+**Boucle produit** : Audit → Score → Fix → Re-test → Learn (dataset longitudinal).
+**Vrai moat = la donnée propriétaire** (Product Intelligence Graph + dataset des corrections), PAS l'UI/dashboard.
+**5 modules** : Agentic Product Audit · Product Understanding Score (7 scores/SKU) · Feed & PDP Fix Engine ·
+Agent-Readable Feed (`/.well-known/agent-commerce-feed.json`) · Workflow Actions + MCP (push Shopify/Akeneo/Jira).
+**GTM** : wedge = audit payant livré en 72h (1,5–12 k€) qui convertit en SaaS (750–10 k€/mois), distribué via agences.
+**Vision** : « le Stripe des décisions d'achat agentiques ». Ambition : que l'*Agentic Commerce Readiness Score™*
+devienne le « Domain Authority » du commerce agentique.
+
+> Implications produit à garder en tête : tout se raisonne au **niveau SKU** ; la donnée accumulée (graph + boucle
+> de correction) prime sur l'interface ; cibles = marques Shopify Plus 500–20k SKU. MCP est une cible (V4) → ce repo
+> pourra exposer des outils type `find_best_product()` / `recommendation_score()`.
 
 ## Stack (vérifié 2026-06-25)
 - **Next.js 16.2.9** (App Router) + **React 19.2.4** — version récente, NE PAS coder de mémoire,

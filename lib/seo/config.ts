@@ -5,9 +5,9 @@ export const siteConfig = {
   name: "Mercaflow",
   // URL absolue de prod. À définir via NEXT_PUBLIC_SITE_URL (sinon fallback localhost).
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
-  // ⚠️ TODO : remplacer par la vraie description (≤ ~155 caractères, mots-clés en tête).
+  // Description SEO (≤ ~155 caractères, mots-clés en tête).
   description:
-    "Mercaflow — décrivez ici votre produit en une phrase claire et riche en mots-clés.",
+    "Mercaflow révèle quels produits sont recommandés ou invisibles dans ChatGPT, Perplexity et Gemini, et génère les corrections SKU pour les rendre visibles.",
   locale: "fr_FR",
   // Handle Twitter/X pour les cartes (avec @). Laisser vide si aucun.
   twitter: "",
