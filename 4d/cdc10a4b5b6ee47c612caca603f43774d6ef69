@@ -1,0 +1,19 @@
+docs/governance-checklist.md
+  s_70379603eedaef::t_e5f6bdcaabee9d 1-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.13",
+  "base_commit_sha": "4dcdc10a4b5b6ee47c612caca603f43774d6ef69",
+  "prompts": {},
+  "sessions": {
+    "s_70379603eedaef": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "16254d7e-eb7f-43f0-b13d-7bda8be6a4a3",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
