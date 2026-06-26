@@ -1,0 +1,28 @@
+.husky/pre-push
+  s_5f931644f2f36a::t_4fd4a2dfd293d7 1
+.github/dependabot.yml
+  s_5f931644f2f36a::t_6e97611c584b79 1-29
+.github/workflows/ci.yml
+  s_5f931644f2f36a::t_abe09920fb43a4 26-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.2",
+  "base_commit_sha": "b5c1fce2cba76d9ebf15ef5da14c0ed2fa5983b4",
+  "prompts": {},
+  "humans": {
+    "h_6ac8c7ee8ab46e": {
+      "author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  },
+  "sessions": {
+    "s_5f931644f2f36a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "614825c1-acb9-4093-ac72-326ee0e3e41e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
