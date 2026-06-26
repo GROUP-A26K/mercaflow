@@ -52,7 +52,7 @@ export function SiteFooter() {
           aria-hidden
           className="pointer-events-none relative z-[1] mt-8 translate-y-[0.18em] select-none"
         >
-          <span className="block w-full bg-linear-to-b from-neutral-500 via-neutral-700 to-neutral-900 bg-clip-text text-center font-heading text-[clamp(2.5rem,16vw,12rem)] font-semibold leading-[0.8] tracking-[-0.04em] whitespace-nowrap text-transparent [mask-image:linear-gradient(to_bottom,#000_55%,transparent)] [-webkit-mask-image:linear-gradient(to_bottom,#000_55%,transparent)]">
+          <span className="block w-full bg-linear-to-b from-neutral-500 via-neutral-700 to-neutral-900 [mask-image:linear-gradient(to_bottom,#000_55%,transparent)] bg-clip-text text-center font-heading text-[clamp(2.5rem,16vw,12rem)] leading-[0.8] font-semibold tracking-[-0.04em] whitespace-nowrap text-transparent [-webkit-mask-image:linear-gradient(to_bottom,#000_55%,transparent)]">
             Mercaflow
           </span>
         </div>

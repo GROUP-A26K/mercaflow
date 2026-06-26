@@ -49,18 +49,18 @@ export function SiteHeader() {
   return (
     <header className="sticky top-4 z-50 mx-auto flex w-[min(72rem,calc(100%-2rem))] items-center justify-between gap-3">
       {/* Îlot logo */}
-      <div className="glass-strong flex h-12 items-center rounded-full px-5 ring-1 ring-foreground/10 shadow-lg shadow-foreground/5">
+      <div className="flex h-12 items-center rounded-full glass-strong px-5 shadow-lg ring-1 shadow-foreground/5 ring-foreground/10">
         <Brand />
       </div>
 
       {/* Îlot actions — desktop */}
-      <div className="glass-strong hidden h-12 items-center gap-3 rounded-full px-4 ring-1 ring-foreground/10 shadow-lg shadow-foreground/5 md:flex">
+      <div className="hidden h-12 items-center gap-3 rounded-full glass-strong px-4 shadow-lg ring-1 shadow-foreground/5 ring-foreground/10 md:flex">
         <NavLinks />
         <AuthActions />
       </div>
 
       {/* Îlot menu — mobile */}
-      <div className="glass-strong flex h-12 items-center rounded-full px-2 ring-1 ring-foreground/10 shadow-lg shadow-foreground/5 md:hidden">
+      <div className="flex h-12 items-center rounded-full glass-strong px-2 shadow-lg ring-1 shadow-foreground/5 ring-foreground/10 md:hidden">
         <MobileNav />
       </div>
     </header>

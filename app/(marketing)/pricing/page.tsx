@@ -94,7 +94,7 @@ export default function PricingPage() {
 
       {/* Heading group */}
       <section className="flex flex-col items-center gap-6 text-center">
-        <Badge variant="outline" className="glass gap-1.5 py-1">
+        <Badge variant="outline" className="gap-1.5 glass py-1">
           <IconTag className="size-3.5 text-primary" />
           Pricing
         </Badge>
@@ -113,7 +113,7 @@ export default function PricingPage() {
         <PricingTiers />
 
         {/* Réassurance — barre glass segmentée, une icône distincte par garantie. */}
-        <ul className="glass mx-auto mt-10 flex w-fit max-w-full flex-col divide-y divide-border overflow-hidden rounded-2xl text-sm text-muted-foreground shadow-sm ring-1 ring-foreground/10 sm:flex-row sm:divide-x sm:divide-y-0">
+        <ul className="mx-auto mt-10 flex w-fit max-w-full flex-col divide-y divide-border overflow-hidden rounded-2xl glass text-sm text-muted-foreground shadow-sm ring-1 ring-foreground/10 sm:flex-row sm:divide-x sm:divide-y-0">
           {trustPoints.map((point) => (
             <li
               key={point.label}

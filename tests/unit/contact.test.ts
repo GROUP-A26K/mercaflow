@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { validateContact, CONTACT_MESSAGE_MAX } from "@/lib/validations/contact";
+import {
+  validateContact,
+  CONTACT_MESSAGE_MAX,
+} from "@/lib/validations/contact";
 
 const valid = {
   name: "Jane Doe",

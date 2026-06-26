@@ -31,20 +31,19 @@ export default function HomePage() {
 
       {/* Hero */}
       <section className="mx-auto flex max-w-3xl flex-col items-center gap-6 text-center">
-        <Badge variant="outline" className="glass gap-1.5 py-1">
+        <Badge variant="outline" className="gap-1.5 glass py-1">
           <IconSparkles className="size-3.5 text-primary" />
           Intelligence produit · Commerce agentique
         </Badge>
         <h1 className="font-heading text-4xl font-semibold tracking-tight text-balance text-foreground sm:text-6xl">
           Vos produits sont-ils{" "}
           <span className="text-muted-foreground">recommandés par </span>
-          <AiLogoCycler />{" "}
-          ?
+          <AiLogoCycler /> ?
         </h1>
-        <p className="max-w-xl text-lg text-muted-foreground text-pretty">
-          Mercaflow révèle quels SKU sont recommandés ou invisibles dans ChatGPT,
-          Perplexity et Gemini, et génère les corrections qui les rendent
-          recommandables.
+        <p className="max-w-xl text-lg text-pretty text-muted-foreground">
+          Mercaflow révèle quels SKU sont recommandés ou invisibles dans
+          ChatGPT, Perplexity et Gemini, et génère les corrections qui les
+          rendent recommandables.
         </p>
         <HeroSearch />
 
@@ -86,7 +85,6 @@ export default function HomePage() {
         </div>
         <HowItWorks />
       </section>
-
     </main>
   );
 }

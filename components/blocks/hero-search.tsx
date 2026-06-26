@@ -19,7 +19,7 @@ function Pill({
 }) {
   return (
     <div className="fx-border fx-shimmer relative w-full max-w-lg rounded-full">
-      <div className="glass-strong flex items-center gap-2 rounded-full p-1.5 pl-5 ring-1 ring-foreground/10">
+      <div className="flex items-center gap-2 rounded-full glass-strong p-1.5 pl-5 ring-1 ring-foreground/10">
         <IconSearch className="size-5 shrink-0 text-muted-foreground" />
         <input
           name="product"
@@ -46,7 +46,7 @@ function Chips({ onPick }: { onPick: (v: string) => void }) {
           key={ex}
           type="button"
           onClick={() => onPick(ex)}
-          className="glass inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm ring-1 ring-foreground/10 hover:bg-accent hover:text-accent-foreground"
+          className="inline-flex items-center gap-1.5 rounded-full glass px-3 py-1.5 text-sm ring-1 ring-foreground/10 hover:bg-accent hover:text-accent-foreground"
         >
           <IconSearch className="size-3.5 text-muted-foreground" />
           {ex}

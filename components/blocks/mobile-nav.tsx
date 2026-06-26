@@ -47,7 +47,7 @@ function NavItems({ onSelect }: { onSelect: () => void }) {
               "relative isolate block overflow-hidden rounded-full px-4 py-2.5 text-sm transition-colors before:absolute before:inset-0 before:-z-10 before:rounded-full before:bg-accent before:transition-transform before:duration-300 before:ease-out before:content-['']",
               active
                 ? "text-accent-foreground before:translate-x-0"
-                : "text-muted-foreground hover:text-accent-foreground before:-translate-x-full hover:before:translate-x-0",
+                : "text-muted-foreground before:-translate-x-full hover:text-accent-foreground hover:before:translate-x-0",
             )}
           >
             {link.label}
@@ -120,7 +120,7 @@ export function MobileNav() {
         alignOffset={-8}
         sideOffset={12}
         collisionPadding={16}
-        className="w-[calc(100vw-2rem)] max-w-none rounded-3xl bg-[color-mix(in_oklch,var(--card),transparent_14%)] p-2.5 ring-1 ring-foreground/10 shadow-xl shadow-foreground/10 backdrop-blur-xl backdrop-saturate-200 inset-shadow-2xs inset-shadow-white/40"
+        className="w-[calc(100vw-2rem)] max-w-none rounded-3xl bg-[color-mix(in_oklch,var(--card),transparent_14%)] p-2.5 shadow-xl ring-1 inset-shadow-2xs shadow-foreground/10 ring-foreground/10 inset-shadow-white/40 backdrop-blur-xl backdrop-saturate-200"
       >
         <NavItems onSelect={close} />
         <div className="mt-2.5 border-t border-foreground/10 px-1.5 pt-3">

@@ -25,7 +25,10 @@ function OpenAiLogo({ className }: { className?: string }) {
 // Chaque entrée rend le logo à la taille demandée, en couleur de marque quand dispo.
 const LOGOS: { label: string; render: (cls: string) => React.ReactNode }[] = [
   { label: "ChatGPT", render: (cls) => <OpenAiLogo className={cls} /> },
-  { label: "Claude", render: (cls) => <SiClaude color="default" className={cls} /> },
+  {
+    label: "Claude",
+    render: (cls) => <SiClaude color="default" className={cls} />,
+  },
   {
     label: "Perplexity",
     render: (cls) => <SiPerplexity color="default" className={cls} />,
@@ -56,7 +59,7 @@ export function AiLogoCycler() {
     >
       <span
         key={i}
-        className="absolute inset-0 flex items-center justify-center animate-in fade-in slide-in-from-bottom-3 duration-300 motion-reduce:animate-none"
+        className="absolute inset-0 flex animate-in items-center justify-center duration-300 fade-in slide-in-from-bottom-3 motion-reduce:animate-none"
       >
         {current.render("size-[0.85em]")}
       </span>

@@ -251,7 +251,9 @@ export function ComponentShowcase() {
           <CardContent>
             <Accordion type="single" collapsible defaultValue="q1">
               <AccordionItem value="q1">
-                <AccordionTrigger>Qu&apos;est-ce qu&apos;un audit ?</AccordionTrigger>
+                <AccordionTrigger>
+                  Qu&apos;est-ce qu&apos;un audit ?
+                </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground">
                   Une analyse SKU-level de votre visibilité dans les moteurs IA.
                 </AccordionContent>
@@ -283,7 +285,9 @@ export function ComponentShowcase() {
             <Alert variant="destructive">
               <IconBell />
               <AlertTitle>Perte de ranking</AlertTitle>
-              <AlertDescription>3 produits ont chuté cette semaine.</AlertDescription>
+              <AlertDescription>
+                3 produits ont chuté cette semaine.
+              </AlertDescription>
             </Alert>
           </CardContent>
         </Card>
@@ -350,10 +354,18 @@ export function ComponentShowcase() {
               <TooltipTrigger asChild>
                 <Button variant="outline">Tooltip</Button>
               </TooltipTrigger>
-              <TooltipContent>Probabilité d&apos;être recommandé</TooltipContent>
+              <TooltipContent>
+                Probabilité d&apos;être recommandé
+              </TooltipContent>
             </Tooltip>
 
-            <Button onClick={() => toast.success("Audit lancé", { description: "Résultats sous 72h." })}>
+            <Button
+              onClick={() =>
+                toast.success("Audit lancé", {
+                  description: "Résultats sous 72h.",
+                })
+              }
+            >
               Toast
             </Button>
           </CardContent>
@@ -399,7 +411,9 @@ export function ComponentShowcase() {
               <TableBody>
                 {skus.map((row) => (
                   <TableRow key={row.sku}>
-                    <TableCell className="font-mono text-xs">{row.sku}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      {row.sku}
+                    </TableCell>
                     <TableCell>{row.name}</TableCell>
                     <TableCell className="text-right tabular-nums">
                       {row.score}

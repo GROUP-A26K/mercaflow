@@ -6,9 +6,7 @@ import { Button } from "@/components/ui/button";
 describe("Button", () => {
   it("affiche son contenu", () => {
     render(<Button>Valider</Button>);
-    expect(
-      screen.getByRole("button", { name: "Valider" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Valider" })).toBeInTheDocument();
   });
 
   it("expose le variant via l'attribut data-variant", () => {

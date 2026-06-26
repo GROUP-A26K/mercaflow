@@ -23,14 +23,14 @@ export function NoteForm() {
           maxLength={NOTE_MAX_LENGTH}
           placeholder="Nouvelle note…"
           aria-label="Contenu de la note"
-          className="border-input flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
         />
         <Button type="submit" disabled={pending}>
           {pending ? "Ajout…" : "Ajouter"}
         </Button>
       </div>
       {state.error ? (
-        <p className="text-destructive text-sm">{state.error}</p>
+        <p className="text-sm text-destructive">{state.error}</p>
       ) : null}
     </form>
   );

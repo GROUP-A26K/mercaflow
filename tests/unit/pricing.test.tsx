@@ -1,7 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { PricingTiers, tiers } from "@/app/(marketing)/pricing/_components/pricing-tiers";
+import {
+  PricingTiers,
+  tiers,
+} from "@/app/(marketing)/pricing/_components/pricing-tiers";
 
 describe("PricingTiers", () => {
   it("expose exactement 3 offres", () => {

@@ -110,7 +110,11 @@ function CardTrust() {
       </div>
       <span className="flex items-center gap-1">
         Rejoint par 200+ marques
-        <SiShopify className="size-3.5" color={SiShopifyHex} aria-label="Shopify" />
+        <SiShopify
+          className="size-3.5"
+          color={SiShopifyHex}
+          aria-label="Shopify"
+        />
       </span>
     </div>
   );
@@ -126,8 +130,8 @@ function PricingCard({ tier }: { tier: Tier }) {
         "relative flex flex-col justify-between rounded-2xl p-8",
         featured
           ? // Meilleure offre : verre renforcé + liseré shimmer animé, dépasse en haut et en bas.
-            "fx-border fx-shimmer glass-strong shadow-xl shadow-foreground/10 ring-1 ring-foreground/15 lg:row-span-full"
-          : "glass shadow-lg shadow-foreground/5 ring-1 ring-foreground/10 lg:row-start-2",
+            "fx-border fx-shimmer glass-strong shadow-xl ring-1 shadow-foreground/10 ring-foreground/15 lg:row-span-full"
+          : "glass shadow-lg ring-1 shadow-foreground/5 ring-foreground/10 lg:row-start-2",
       )}
     >
       {featured ? (
@@ -169,12 +173,7 @@ function PricingCard({ tier }: { tier: Tier }) {
       </div>
 
       <div className="mt-8">
-        <Button
-          asChild
-          size="lg"
-          variant={tier.cta.variant}
-          className="w-full"
-        >
+        <Button asChild size="lg" variant={tier.cta.variant} className="w-full">
           <Link href={tier.cta.href}>{tier.cta.label}</Link>
         </Button>
         {/* Preuve sociale in-card (conversion). */}
