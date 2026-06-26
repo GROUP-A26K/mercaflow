@@ -33,6 +33,7 @@ devienne le « Domain Authority » du commerce agentique.
 - **Supabase** (`@supabase/supabase-js`) — DB UNIQUEMENT (pas d'auth). Identité via **JWT Clerk passé en `accessToken`** (Third-Party Auth), PAS via cookies. `server.ts` (serveur, token via `auth().getToken()`) ; `client.ts` expose `useSupabaseClient()` (token via session Clerk).
   Clé au nouveau format `sb_publishable_…` : OK pour requêtes de tables, mais PAS pour l'endpoint racine `/rest/v1/` (exige clé secrète).
 - **Resend** (`resend`) — email transactionnel, CÂBLÉ dans `lib/mail/` : `client.ts` (getResend lazy, server-only), `send.ts` (`sendEmail`), `templates.ts` (gabarits HTML purs). Déclencheurs : webhook Clerk `app/api/webhooks/clerk/route.ts` (email de bienvenue sur `user.created`) + page `/settings` (bouton email de test). Envoi serveur uniquement.
+- **Sentry** (`@sentry/nextjs`) — observabilité (erreurs serveur+client + Web Vitals). CÂBLÉ : `instrumentation.ts` (register Node), `sentry.server.config.ts`, `instrumentation-client.ts`, `withSentryConfig` dans `next.config.ts`. **No-op tant que `NEXT_PUBLIC_SENTRY_DSN` est absent** (`enabled: Boolean(dsn)`) → activation = ajout du DSN. Pas d'edge config (Next 16 = Node only).
 - Icônes : `@tabler/icons-react`
 - Polices : Geist Sans, Geist Mono, Manrope (heading) via `next/font/google`
 
@@ -43,6 +44,7 @@ Modèle complet dans `.env.example` (à copier en `.env.local`, jamais commité)
 - **Supabase** : `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 - **Resend** : `RESEND_API_KEY` (présent), `RESEND_FROM_EMAIL` (domaine vérifié ; sinon fallback `onboarding@resend.dev` qui n'envoie qu'à l'email du compte Resend).
 - **Webhook Clerk** : `CLERK_WEBHOOK_SIGNING_SECRET` (Clerk Dashboard → Webhooks) — requis pour l'email de bienvenue.
+- **Sentry** : `NEXT_PUBLIC_SENTRY_DSN` (active l'envoi d'événements ; absent = no-op) + pour l'upload des source maps en CI/prod : `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`. À créer côté Sentry (action JB) + ajouter à `.env.example`/Infisical.
 
 ## Règles Next 16 (à respecter absolument)
 - **Server-first** : tout est Server Component par défaut. `'use client'` UNIQUEMENT si state /
