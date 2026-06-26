@@ -1,0 +1,21 @@
+.claude/settings.json
+  s_0f6f572353d77c::t_c9a2d4e5a14f9b 16-17,25
+.mcp.json
+  s_0f6f572353d77c::t_bef8b1bc2f7e77 19-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.2",
+  "base_commit_sha": "987a37fec700c83e6b9ecd09bca06630be87e9cf",
+  "prompts": {},
+  "sessions": {
+    "s_0f6f572353d77c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "83f9e140-6992-43ab-a6a5-4db7dacfb3ec",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
