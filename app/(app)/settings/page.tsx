@@ -15,7 +15,7 @@ export default function SettingsPage() {
         <h1 className="font-heading text-2xl font-semibold tracking-tight">
           Réglages
         </h1>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-muted-foreground">
           Vérifiez l&apos;envoi d&apos;email (Resend) avec un message de test.
         </p>
       </div>

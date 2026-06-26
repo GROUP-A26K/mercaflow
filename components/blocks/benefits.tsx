@@ -28,11 +28,7 @@ const METRICS = [
 ];
 
 // Animation d'entrée différente à chaque changement de carte (littéraux = détectés par Tailwind).
-const ENTER = [
-  "slide-in-from-right-4",
-  "slide-in-from-bottom-4",
-  "zoom-in-95",
-];
+const ENTER = ["slide-in-from-right-4", "slide-in-from-bottom-4", "zoom-in-95"];
 
 // Micro-animation propre à chaque icône, jouée quand sa case est active (motion-safe).
 const ICON_ANIM = [
@@ -44,7 +40,7 @@ const ICON_ANIM = [
 // Coque commune du mockup (label + question + réponse), avec le contenu spécifique en enfants.
 function MockShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="glass rounded-2xl p-5 ring-1 shadow-xl ring-foreground/10 shadow-foreground/5">
+    <div className="rounded-2xl glass p-5 shadow-xl ring-1 shadow-foreground/5 ring-foreground/10">
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <span className="size-2 rounded-full bg-primary" />
         AI answer
@@ -70,8 +66,8 @@ function MockVisibility() {
       </div>
       <p className="mt-3 text-sm text-muted-foreground">
         Mentioned in{" "}
-        <span className="font-medium text-foreground tabular-nums">62%</span> of AI
-        answers.
+        <span className="font-medium text-foreground tabular-nums">62%</span> of
+        AI answers.
       </p>
     </MockShell>
   );
@@ -116,7 +112,8 @@ function MockSentiment() {
         <Badge variant="destructive">Pricey</Badge>
       </div>
       <p className="mt-3 text-sm text-muted-foreground">
-        Mostly positive: comfort and grip stand out, price is the main watch-out.
+        Mostly positive: comfort and grip stand out, price is the main
+        watch-out.
       </p>
     </MockShell>
   );
@@ -165,14 +162,14 @@ export function Benefits() {
               </span>
               <div className="flex-1">
                 <h3 className="font-heading text-lg font-medium">{m.title}</h3>
-                <p className="mt-1 text-sm text-muted-foreground text-pretty">
+                <p className="mt-1 text-sm text-pretty text-muted-foreground">
                   {m.text}
                 </p>
                 <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-foreground/8">
                   {isActive && (
                     <div
                       key={active}
-                      className="h-full w-0 rounded-full bg-foreground/30 animate-[progress-fill_5s_linear_forwards] motion-reduce:w-full"
+                      className="h-full w-0 animate-[progress-fill_5s_linear_forwards] rounded-full bg-foreground/30 motion-reduce:w-full"
                     />
                   )}
                 </div>
@@ -184,7 +181,10 @@ export function Benefits() {
 
       <div
         key={active}
-        className={cn("animate-in fade-in duration-500 motion-reduce:animate-none", ENTER[active])}
+        className={cn(
+          "animate-in duration-500 fade-in motion-reduce:animate-none",
+          ENTER[active],
+        )}
       >
         <Mock />
       </div>

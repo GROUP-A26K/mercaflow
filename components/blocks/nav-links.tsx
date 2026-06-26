@@ -30,7 +30,7 @@ function NavLink({
         "relative isolate overflow-hidden rounded-full px-3 py-1.5 text-sm transition-colors before:absolute before:inset-0 before:-z-10 before:rounded-full before:bg-accent before:transition-transform before:duration-300 before:ease-out before:content-['']",
         active
           ? "text-accent-foreground before:translate-x-0"
-          : "text-muted-foreground hover:text-accent-foreground before:-translate-x-full hover:before:translate-x-0",
+          : "text-muted-foreground before:-translate-x-full hover:text-accent-foreground hover:before:translate-x-0",
       )}
     >
       {children}

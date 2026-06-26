@@ -62,7 +62,7 @@ export default function ContactPage() {
       <section className="mx-auto max-w-5xl">
         {/* Split card : moitié gauche teintée (pitch + coordonnées + preuve sociale),
             moitié droite le formulaire. Un seul panneau encadré, pas de double carte. */}
-        <div className="glass-strong overflow-hidden rounded-3xl shadow-xl ring-1 shadow-foreground/5 ring-foreground/10 lg:grid lg:grid-cols-2">
+        <div className="overflow-hidden rounded-3xl glass-strong shadow-xl ring-1 shadow-foreground/5 ring-foreground/10 lg:grid lg:grid-cols-2">
           {/* Gauche */}
           <div className="relative isolate flex flex-col gap-8 border-b border-foreground/10 bg-muted/40 p-8 sm:p-10 lg:border-r lg:border-b-0">
             {/* Halo discret en fond */}
@@ -72,7 +72,7 @@ export default function ContactPage() {
             />
 
             <div>
-              <Badge variant="outline" className="glass gap-1.5 py-1">
+              <Badge variant="outline" className="gap-1.5 glass py-1">
                 <IconMail className="size-3.5 text-primary" />
                 Contact
               </Badge>

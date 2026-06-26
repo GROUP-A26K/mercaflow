@@ -38,7 +38,11 @@ export function webPageJsonLd(opts: {
     name: opts.name,
     description: opts.description ?? siteConfig.description,
     url: `${siteConfig.url}${opts.path ?? "/"}`,
-    isPartOf: { "@type": "WebSite", name: siteConfig.name, url: siteConfig.url },
+    isPartOf: {
+      "@type": "WebSite",
+      name: siteConfig.name,
+      url: siteConfig.url,
+    },
   };
 }
 

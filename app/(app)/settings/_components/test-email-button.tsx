@@ -22,8 +22,8 @@ export function TestEmailButton() {
         <p
           className={
             state.ok
-              ? "text-muted-foreground text-sm"
-              : "text-destructive text-sm"
+              ? "text-sm text-muted-foreground"
+              : "text-sm text-destructive"
           }
         >
           {state.message}

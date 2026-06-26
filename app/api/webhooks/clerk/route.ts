@@ -24,7 +24,10 @@ export async function POST(req: NextRequest) {
 
     if (email) {
       try {
-        await sendEmail({ to: email, ...welcomeEmail({ name: first_name ?? undefined }) });
+        await sendEmail({
+          to: email,
+          ...welcomeEmail({ name: first_name ?? undefined }),
+        });
       } catch (err) {
         // On répond 200 malgré l'échec : éviter que Clerk retente le webhook en boucle
         // pour un simple email. L'erreur est loggée pour diagnostic.

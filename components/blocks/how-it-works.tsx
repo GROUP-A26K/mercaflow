@@ -1,8 +1,4 @@
-import {
-  IconChartBar,
-  IconPlugConnected,
-  IconWand,
-} from "@tabler/icons-react";
+import { IconChartBar, IconPlugConnected, IconWand } from "@tabler/icons-react";
 
 const STEPS = [
   {

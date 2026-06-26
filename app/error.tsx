@@ -22,7 +22,7 @@ export default function ErrorPage({
       <h1 className="font-heading text-2xl font-semibold tracking-tight">
         Une erreur est survenue
       </h1>
-      <p className="text-muted-foreground max-w-sm text-sm">
+      <p className="max-w-sm text-sm text-muted-foreground">
         Réessayez ; si le problème persiste, contactez le support.
       </p>
       <Button onClick={() => unstable_retry()}>Réessayer</Button>
