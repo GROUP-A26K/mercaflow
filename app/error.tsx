@@ -1,5 +1,6 @@
 "use client"; // Les error boundaries doivent être des Client Components.
 
+import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -13,8 +14,9 @@ export default function ErrorPage({
   unstable_retry: () => void;
 }) {
   useEffect(() => {
-    // Brancher ici un service de reporting (Sentry, etc.).
-    console.error(error);
+    // Une erreur captée par cette boundary est avalée côté client : on la
+    // remonte explicitement à Sentry (no-op tant que le DSN est absent).
+    Sentry.captureException(error);
   }, [error]);
 
   return (

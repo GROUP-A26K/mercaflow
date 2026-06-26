@@ -1,5 +1,6 @@
 "use client"; // Les error boundaries doivent être des Client Components.
 
+import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ export default function AppError({
   unstable_retry: () => void;
 }) {
   useEffect(() => {
-    console.error(error);
+    Sentry.captureException(error);
   }, [error]);
 
   return (
