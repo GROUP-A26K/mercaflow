@@ -1,0 +1,19 @@
+scripts/infisical-push.sh
+  s_48a60e9ecd876d::t_37cfe572f7c51b 1-128
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.2",
+  "base_commit_sha": "7d40277e7fa45e7fa6736419fd7c27bc35614687",
+  "prompts": {},
+  "sessions": {
+    "s_48a60e9ecd876d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0c1af9e1-c860-4ad7-8710-71ab65d3bddf",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
