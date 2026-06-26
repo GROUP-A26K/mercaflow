@@ -1,0 +1,23 @@
+next.config.ts
+  s_48a60e9ecd876d::t_f9dde57fa41a84 14-17
+instrumentation-client.ts
+  s_48a60e9ecd876d::t_941505bf167128 6,15-21
+sentry.server.config.ts
+  s_48a60e9ecd876d::t_8a3348e19befda 4-6,10,15-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.2",
+  "base_commit_sha": "0b6bce6a387b17dedf1b7053db086dcc677d8943",
+  "prompts": {},
+  "sessions": {
+    "s_48a60e9ecd876d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0c1af9e1-c860-4ad7-8710-71ab65d3bddf",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
