@@ -1,0 +1,37 @@
+sentry.server.config.ts
+  s_5f931644f2f36a::t_9d944b2d6e5934 1-18
+package.json
+  s_5f931644f2f36a::t_b6ae7ce037926a 31
+instrumentation.ts
+  s_5f931644f2f36a::t_23e6eb27081c30 1-15
+next.config.ts
+  s_5f931644f2f36a::t_cd1cb5db5f68ab 2,8-16
+instrumentation-client.ts
+  s_5f931644f2f36a::t_17be837bce2dfc 1-19
+MEMORY.md
+  s_5f931644f2f36a::t_f730f7d290fdef 36
+  s_5f931644f2f36a::t_ebe22f79db02be 47
+package-lock.json
+  s_5f931644f2f36a::t_e09797b7036bcd 15,86-128,2977-3071,5298-6245,6248-6256,6259-6262,6264-6267,6269,6272-6275,6277-6279,6281-6284,9719-9893,9932-9953,10329-10337,10925-10934,10985-10990,11188-11193,13030-13039,13705-13721,13741-13776,14152-14166,14653-14661,15790-15803,16135-16144,16713-16813,16827-16832,16889-16895,17561-17585,17977-17985,18043-18048,18789-18801,18960-19003,19204-19284,20469,21231-21243,21257-21332,21334-21351
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.2",
+  "base_commit_sha": "4dc2d152dde328b00c8a88fd3a3a79539aa25bbf",
+  "prompts": {},
+  "humans": {
+    "h_6ac8c7ee8ab46e": {
+      "author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  },
+  "sessions": {
+    "s_5f931644f2f36a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "614825c1-acb9-4093-ac72-326ee0e3e41e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
