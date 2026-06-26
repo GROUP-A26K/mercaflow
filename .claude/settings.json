@@ -13,7 +13,8 @@
       "mcp__github__*",
       "mcp__linear__*",
       "mcp__supabase__*",
-      "mcp__infisical__*"
+      "mcp__infisical__*",
+      "mcp__vercel__*"
     ],
     "ask": [
       "mcp__infisical__create-secret",
@@ -21,6 +22,7 @@
       "mcp__infisical__delete-secret",
       "mcp__supabase__apply_migration",
       "mcp__supabase__deploy_edge_function",
+      "mcp__vercel__deploy_to_vercel",
       "Bash(npm publish:*)",
       "Bash(supabase db push:*)",
       "Bash(supabase functions deploy:*)",
