@@ -1,0 +1,21 @@
+package.json
+  s_ef208aea5b68f8::t_c069a53bc74596 6,8-9,16
+.infisical.json
+  s_ef208aea5b68f8::t_15fb91dbb0bd62 1-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.2",
+  "base_commit_sha": "dc637e7e3f73219cb71023fa3e975e1cca7426ae",
+  "prompts": {},
+  "sessions": {
+    "s_ef208aea5b68f8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9508bfb1-e7f7-4fcb-a181-90246824bbd4",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
