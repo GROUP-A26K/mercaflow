@@ -11,6 +11,10 @@ export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,
+  // Élargit l'upload des source maps aux fichiers serveur (stack traces lisibles).
+  widenClientFileUpload: true,
+  // Proxifie les events Sentry via /monitoring pour contourner les bloqueurs de pub.
+  tunnelRoute: "/monitoring",
   // Silencieux en local, verbeux uniquement en CI.
   silent: !process.env.CI,
 });
