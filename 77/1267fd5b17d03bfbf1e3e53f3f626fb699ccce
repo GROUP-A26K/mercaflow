@@ -1,0 +1,39 @@
+commitlint.config.mjs
+  s_48a60e9ecd876d::t_5a4e5f7fe07486 1-17
+package.json
+  s_48a60e9ecd876d::t_622999f442f416 10-11,16,20-24
+  s_48a60e9ecd876d::t_c754bf9c83d7aa 57-58,70,74-75
+eslint.config.mjs
+  s_48a60e9ecd876d::t_0bda17b4621dfb 4,9-11
+CLAUDE.md
+  s_48a60e9ecd876d::t_2e5b408c9514c8 24-29
+.husky/commit-msg
+  s_48a60e9ecd876d::t_dd09757892fbb0 1
+.prettierignore
+  s_48a60e9ecd876d::t_b6813b44773b99 1-18
+prettier.config.mjs
+  s_48a60e9ecd876d::t_9e781a89b8ae9c 1-15
+package-lock.json
+  s_48a60e9ecd876d::t_a6998906c91277 41-42,54,58-59,760-1210,5224-5252,8885-8891,9905-9928,10124-10166,10254-10281,11375-11390,12393-12410,12430-12445,12831-12840,14692-14704,16303-16397
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.2",
+  "base_commit_sha": "771267fd5b17d03bfbf1e3e53f3f626fb699ccce",
+  "prompts": {},
+  "humans": {
+    "h_6ac8c7ee8ab46e": {
+      "author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  },
+  "sessions": {
+    "s_48a60e9ecd876d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0c1af9e1-c860-4ad7-8710-71ab65d3bddf",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
