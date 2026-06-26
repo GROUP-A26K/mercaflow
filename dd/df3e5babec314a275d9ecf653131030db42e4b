@@ -1,0 +1,36 @@
+app/(app)/error.tsx
+  s_48a60e9ecd876d::t_75cf0287406c83 3,17
+tests/unit/error-boundary.test.tsx
+  s_48a60e9ecd876d::t_dd08739c829609 29-31,33-35,42
+  s_48a60e9ecd876d::t_c67ca8171d4b92 1-28,32,36-41,43-49
+app/error.tsx
+  s_48a60e9ecd876d::t_f204b584d53f26 3,17-19
+app/global-error.tsx
+  s_48a60e9ecd876d::t_2cd0d1abdb5b05 1-40
+scripts/infisical-push.sh
+  s_2248709b79f489::t_f8caa7fe1c2bcd 1-128
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.2",
+  "base_commit_sha": "dddf3e5babec314a275d9ecf653131030db42e4b",
+  "prompts": {},
+  "sessions": {
+    "s_2248709b79f489": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f28717bb-c583-4160-81fe-63d37e9945ab",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    },
+    "s_48a60e9ecd876d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0c1af9e1-c860-4ad7-8710-71ab65d3bddf",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
