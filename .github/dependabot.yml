@@ -1,0 +1,29 @@
+# Dependabot — mises à jour de dépendances (MER-7).
+# Cadence hebdo. Préfixes Conventional Commits pour rester cohérent avec
+# commitlint (CLAUDE.md §2) ; les minor/patch sont groupés pour réduire le bruit.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
+    groups:
+      # Un seul PR groupé pour toutes les montées mineures/patch.
+      npm-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    commit-message:
+      prefix: "ci"
