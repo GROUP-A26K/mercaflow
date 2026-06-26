@@ -1,0 +1,18 @@
+# Générés / build
+.next/
+out/
+build/
+coverage/
+node_modules/
+
+# Artefacts de test
+playwright-report/
+test-results/
+
+# Lockfile & infos build
+package-lock.json
+tsconfig.tsbuildinfo
+next-env.d.ts
+
+# Contenu non-code (laissé tel quel)
+*.md

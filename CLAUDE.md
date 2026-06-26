@@ -21,8 +21,12 @@ Les règles **produit & techniques** (stack, archi, SEO, perf, tests) sont dans
 
 ## 3. La porte de qualité : `make check` = CI
 
-- **`make check`** (= `npm run check` = `typecheck + lint + test`) doit être **vert
-  avant tout push**. La CI GitHub exécute exactement le même script — local = CI.
+- **`make check`** (= `npm run check` = `typecheck + lint + format:check + test`) doit
+  être **vert avant tout push**. La CI GitHub exécute exactement le même script — local = CI.
+- **Formatage** : Prettier est la source de vérité (`npm run format` pour corriger).
+  `eslint-config-prettier` neutralise les règles de format d'ESLint (pas de double emploi).
+- **Commits** : `commitlint` (hook `commit-msg`) valide les Conventional Commits ; `lint-staged`
+  (hook `pre-commit`) lance `eslint --fix` + `prettier --write` sur les fichiers stagés.
 - Une PR sans CI verte n'est pas mergeable (garde-fou process ; protection de branche
   à activer côté GitHub quand le plan le permet).
 - **TDD attendu** sur la logique métier : test d'abord (RED), implémentation (GREEN),
