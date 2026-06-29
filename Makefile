@@ -2,7 +2,7 @@
 # Usage : `make <cible>` (ex. `make dev`). `make` seul affiche cette aide.
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev build start lint typecheck test test-watch test-e2e check clean reset
+.PHONY: help install dev build start lint typecheck test test-watch test-e2e check clean reset agents wt
 
 help: ## Affiche les cibles disponibles
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -37,6 +37,13 @@ test-e2e: ## Tests end-to-end (Playwright)
 
 check: ## typecheck + lint + tests (à lancer avant de commit)
 	npm run check
+
+agents: ## Tableau de bord des agents & worktrees (qui-est-sur-quoi)
+	@scripts/agents.sh
+
+wt: ## Crée un worktree isolé : make wt b=feat/JB/MER-XX-slug
+	@test -n "$(b)" || { echo "Usage : make wt b=feat/JB/MER-XX-slug"; exit 2; }
+	@scripts/wt.sh "$(b)"
 
 clean: ## Supprime le cache de build Next
 	rm -rf .next
