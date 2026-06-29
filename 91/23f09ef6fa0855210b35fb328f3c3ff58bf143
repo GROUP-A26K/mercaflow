@@ -1,0 +1,30 @@
+components/blocks/site-header.tsx
+  s_9259caf80c12f7::t_914e57e5bcc835 2
+  s_9259caf80c12f7::t_cdfb16fc2d0067 39-43
+lib/data/auth.ts
+  s_9259caf80c12f7::t_f9255c84c97236 28-40
+app/robots.ts
+  s_9259caf80c12f7::t_2f2a26f691add8 11-17
+app/select-organization/page.tsx
+  s_9259caf80c12f7::t_03b6623531034d 1-31
+tests/unit/auth.test.ts
+  s_9259caf80c12f7::t_7856178359536f 1-57
+app/(app)/layout.tsx
+  s_9259caf80c12f7::t_2d63e0539d563a 1,3,8-10,16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "9123f09ef6fa0855210b35fb328f3c3ff58bf143",
+  "prompts": {},
+  "sessions": {
+    "s_9259caf80c12f7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "598fb224-3d82-47eb-ae2b-0f686e43b280",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
