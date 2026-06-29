@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Show, UserButton } from "@clerk/nextjs";
+import { OrganizationSwitcher, Show, UserButton } from "@clerk/nextjs";
 
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/blocks/mobile-nav";
@@ -36,6 +36,11 @@ function AuthActions() {
         </Button>
       </Show>
       <Show when="signed-in">
+        <OrganizationSwitcher
+          hidePersonal
+          afterCreateOrganizationUrl="/dashboard"
+          afterSelectOrganizationUrl="/dashboard"
+        />
         <Button asChild variant="ghost" size="sm">
           <Link href="/dashboard">Tableau de bord</Link>
         </Button>
