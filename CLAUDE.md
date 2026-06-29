@@ -28,7 +28,7 @@ Les règles **produit & techniques** (stack, archi, SEO, perf, tests) sont dans
 - Worktrees dans `.claude/worktrees/` (gitignoré) — la convention native du harness CC.
   Dans une session CC : outil natif **EnterWorktree**. En terminal : `make wt b=feat/JB/MER-XX-slug`.
 - **`make agents`** = tableau de bord « qui-est-sur-quoi » + alertes dérive/collision (à lancer
-  quand ça « s'entremêle »). Worktree **jeté** après merge (`git worktree remove`).
+  quand ça « s'entremêle »). Worktree **jeté** après merge (`git worktree remove <chemin>`).
 - Détails, dedup `node_modules` (clone CoW APFS) et upgrade cockpit (Crystal) : `docs/worktrees.md`.
 
 ## 3. La porte de qualité : `make check` = CI

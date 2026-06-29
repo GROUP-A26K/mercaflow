@@ -132,6 +132,9 @@ while [ "$i" -lt "${#WT_PATHS[@]}" ]; do
   else
     printf '%s  %b %b%b\n' "${BOLD}$(basename "$WT_PATH")${RST}" "$state" "$ahead_behind" "${sess_badge:+ $sess_badge}"
     printf '  %s\n' "${DIM}${branch}  ·  ${WT_PATH}${RST}"
+    if [ "$nsess" -gt 1 ]; then
+      WARNINGS+=("${nsess} sessions dans le worktree '$(basename "$WT_PATH")' — 1 session = 1 worktree.")
+    fi
   fi
   echo
   i=$((i+1))

@@ -52,7 +52,8 @@ cd .claude/worktrees/feat+JB+MER-42-audit-feed
 # → passer MER-42 « In Progress » dans Linear, ouvrir ce dossier dans une
 #   nouvelle fenêtre VSCode, y lancer Claude Code, coder, make check, PR.
 
-# après merge de la PR :
+# après merge de la PR (depuis le checkout principal, pas depuis le worktree) :
+cd ~/Code/Mercaflow
 git worktree remove .claude/worktrees/feat+JB+MER-42-audit-feed
 git branch -d feat/JB/MER-42-audit-feed
 ```
