@@ -1,0 +1,31 @@
+tests/unit/shopify-oauth.test.ts
+  s_9259caf80c12f7::t_d76ef4c26ca767 23
+app/api/shopify/callback/route.ts
+  s_9259caf80c12f7::t_da228559794187 66-81,92-99
+  s_9259caf80c12f7::t_0170003d3b1ea6 4
+tests/unit/shopify-connections.test.ts
+  s_9259caf80c12f7::t_7b3d006c988216 3-11
+  s_9259caf80c12f7::t_7cc1d7175af6de 1-2,12-71
+tests/unit/supabase-admin.test.ts
+  s_9259caf80c12f7::t_8f8df5e037e21c 1-4,6-49
+  s_9259caf80c12f7::t_2a4faa4c29c65d 5
+lib/shopify/oauth.ts
+  s_9259caf80c12f7::t_86bbd91ce1aebe 79-83,87
+  s_9259caf80c12f7::t_3c33eca874c884 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "26623545088e0b6924ad40306a3a582e5f8c48da",
+  "prompts": {},
+  "sessions": {
+    "s_9259caf80c12f7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "598fb224-3d82-47eb-ae2b-0f686e43b280",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
