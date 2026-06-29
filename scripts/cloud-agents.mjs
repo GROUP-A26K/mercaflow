@@ -133,6 +133,8 @@ async function launchOne(prompt, opts) {
   };
   const res = await api("/v1/agents", { method: "POST", body });
   const id = res.agentId || res.id;
+  // 200 sans identifiant = pas de vrai agent → échec, pas un faux succès.
+  if (!id) throw new Error(`réponse sans agentId  «${prompt}»`);
   console.log(`→ lancé : ${id}  «${prompt}»`);
   if (!opts.wait) return { id, prompt };
   return waitFor(id, prompt);
