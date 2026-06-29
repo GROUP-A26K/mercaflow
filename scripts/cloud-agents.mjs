@@ -156,8 +156,10 @@ async function waitFor(id, prompt) {
       console.log(`✓ ${id} → ${status}  ${pr}  «${prompt}»`);
       return { id, prompt, pr };
     }
-    // Statut d'échec → LÈVE pour que l'agent soit compté en échec (exit ≠ 0).
-    if (["ERROR", "FAILED", "CANCELLED"].includes(status)) {
+    // Statut terminal d'échec → LÈVE pour compter l'agent en échec (exit ≠ 0).
+    if (
+      ["ERROR", "FAILED", "CANCELLED", "STOPPED", "EXPIRED"].includes(status)
+    ) {
       throw new Error(`${id} → ${status}  «${prompt}»`);
     }
   }
