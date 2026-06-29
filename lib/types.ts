@@ -4,5 +4,4 @@
 
 /** Forme générique d'une réponse d'action serveur (succès / erreur). */
 export type ActionResult<T = void> =
-  | { ok: true; data: T }
-  | { ok: false; error: string };
+  { ok: true; data: T } | { ok: false; error: string };
