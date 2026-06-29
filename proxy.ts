@@ -6,6 +6,11 @@ const isPublicRoute = createRouteMatcher([
   "/contact(.*)",
   "/sign-in(.*)",
   "/sign-up(.*)",
+  // Routes Shopify machine-à-machine : authentifiées par HMAC Shopify, pas par Clerk
+  // (le callback est une redirection sans session ; les webhooks n'en ont jamais).
+  // L'install reste protégé — il a besoin de l'org active via `auth()`.
+  "/api/shopify/callback",
+  "/api/shopify/webhooks(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
