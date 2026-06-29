@@ -1,0 +1,19 @@
+docs/superpowers/plans/2026-06-29-loopflow-layer1-daily-triage.md
+  s_47098c41ac940f::t_425af78c3ad434 1-2469
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "f6bca8d123d84545feb321da6ce4d1a492467249",
+  "prompts": {},
+  "sessions": {
+    "s_47098c41ac940f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a27d82a9-1110-465b-982a-51b970e8e7de",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
