@@ -19,6 +19,16 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # ESLint 10 est bloqué upstream (MER-30) : eslint-config-next@16.2.9 embarque
+      # eslint-plugin-react@7.37.5 qui appelle l'API context.getFilename() supprimée
+      # en v10 → la CI `lint` plante. Aucune version d'eslint-plugin-react ne supporte
+      # encore ESLint 10. On reste donc en v9 (minor/patch toujours couverts par le
+      # groupe ci-dessus) et on ignore le bump MAJEUR tant que l'upstream ne suit pas.
+      # À retirer quand eslint-config-next déclarera le support `eslint ^10`.
+      - dependency-name: "eslint"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: "github-actions"
     directory: "/"
