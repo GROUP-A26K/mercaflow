@@ -19,6 +19,18 @@ Les règles **produit & techniques** (stack, archi, SEO, perf, tests) sont dans
   branche supprimée après merge.
 - `<LINEAR-ID>` : le préfixe d'équipe Linear (ex. `MER`) est fixé à la création de l'équipe.
 
+### Worktrees & multi-agent (anti-tangling)
+
+- **1 session = 1 worktree isolé. Jamais deux agents dans le même checkout** — sinon ils se
+  battent pour l'unique `git HEAD` et le principal dérive hors de `main`.
+- Le **checkout principal** (`~/Code/Mercaflow`) reste **sur `main`** : on n'y code pas une
+  feature, on l'utilise pour `pull`, créer des worktrees et lancer le tableau de bord.
+- Worktrees dans `.claude/worktrees/` (gitignoré) — la convention native du harness CC.
+  Dans une session CC : outil natif **EnterWorktree**. En terminal : `make wt b=feat/JB/MER-XX-slug`.
+- **`make agents`** = tableau de bord « qui-est-sur-quoi » + alertes dérive/collision (à lancer
+  quand ça « s'entremêle »). Worktree **jeté** après merge (`git worktree remove <chemin>`).
+- Détails, dedup `node_modules` (clone CoW APFS) et upgrade cockpit (Crystal) : `docs/worktrees.md`.
+
 ## 3. La porte de qualité : `make check` = CI
 
 - **`make check`** (= `npm run check` = `typecheck + lint + format:check + test`) doit
