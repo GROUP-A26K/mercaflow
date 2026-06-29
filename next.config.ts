@@ -1,9 +1,7 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
-const nextConfig: NextConfig = {
-  /* config options here */
-};
+const nextConfig: NextConfig = {/* config options here */};
 
 // Sentry — câblage build-time. L'upload des source maps n'a lieu que si
 // SENTRY_AUTH_TOKEN / org / project sont fournis (CI/prod) ; sinon no-op.
