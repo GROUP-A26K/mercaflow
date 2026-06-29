@@ -31,6 +31,9 @@ const DEFAULT_REPO =
   process.env.CURSOR_REPO || "https://github.com/GROUP-A26K/mercaflow";
 const DEFAULT_MODEL = process.env.CURSOR_MODEL || "claude-4.6-sonnet-thinking";
 
+const POLL_MS = 10000;
+const MAX_WAIT_MS = Number(process.env.CURSOR_MAX_WAIT_MS) || 30 * 60 * 1000;
+
 // --- mini parseur d'arguments ------------------------------------------------
 function parseArgs(argv) {
   const opts = {
@@ -43,15 +46,23 @@ function parseArgs(argv) {
     model: DEFAULT_MODEL,
     prompts: [],
   };
+  // Récupère la valeur d'une option et vérifie qu'elle existe et n'est pas une
+  // autre option (sinon `--repo --wait` ferait de "--wait" l'URL du repo).
+  const value = (flag, i) => {
+    const v = argv[i + 1];
+    if (v === undefined || v.startsWith("--"))
+      fail(`${flag} attend une valeur.`);
+    return v;
+  };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--check") opts.check = true;
     else if (a === "--list") opts.list = true;
     else if (a === "--dry-run") opts.dryRun = true;
     else if (a === "--wait") opts.wait = true;
-    else if (a === "--repo") opts.repo = argv[++i];
-    else if (a === "--ref") opts.ref = argv[++i];
-    else if (a === "--model") opts.model = argv[++i];
+    else if (a === "--repo") opts.repo = value("--repo", i++);
+    else if (a === "--ref") opts.ref = value("--ref", i++);
+    else if (a === "--model") opts.model = value("--model", i++);
     else if (a.startsWith("--")) fail(`Option inconnue : ${a}`);
     else opts.prompts.push(a);
   }
@@ -93,8 +104,13 @@ async function api(path, { method = "GET", body } = {}) {
 // --- commandes ---------------------------------------------------------------
 async function cmdCheck() {
   const me = await api("/v1/me");
-  console.log("✓ Clé valide. Compte :", JSON.stringify(me));
-  console.log("✓ Accès API Cloud Agents OK — tu peux lancer une flotte.");
+  console.log(
+    `✓ Clé valide (${me.apiKeyName || me.userEmail || "compte OK"}).`,
+  );
+  // /v1/me ne valide QUE la clé. On exerce vraiment l'API Cloud Agents pour
+  // confirmer l'accès (un plan sans le scope agents échouera ici en 403).
+  await api("/v1/agents");
+  console.log("✓ Accès API Cloud Agents confirmé — tu peux lancer une flotte.");
 }
 
 async function cmdList() {
@@ -123,9 +139,16 @@ async function launchOne(prompt, opts) {
 }
 
 async function waitFor(id, prompt) {
-  // Poll simple ; backoff fixe pour rester sous les rate limits.
+  // Poll simple ; backoff fixe pour rester sous les rate limits. Borné par
+  // MAX_WAIT_MS pour ne jamais tourner à l'infini si un agent stalle.
+  const deadline = Date.now() + MAX_WAIT_MS;
   for (;;) {
-    await new Promise((r) => setTimeout(r, 10000));
+    if (Date.now() > deadline) {
+      throw new Error(
+        `${id} → timeout après ${Math.round(MAX_WAIT_MS / 60000)} min  «${prompt}»`,
+      );
+    }
+    await new Promise((r) => setTimeout(r, POLL_MS));
     const a = await api(`/v1/agents/${id}`);
     const status = a.status || a.state;
     if (["FINISHED", "COMPLETED"].includes(status)) {
