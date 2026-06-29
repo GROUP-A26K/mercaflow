@@ -1,0 +1,23 @@
+lib/types.ts
+  s_87b40e3696efed::t_3d932e31858505 7
+lib/validations/notes.ts
+  s_87b40e3696efed::t_3d932e31858505 7
+next.config.ts
+  s_87b40e3696efed::t_3d932e31858505 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "895c09fd35c374c3f3ad79be85ce7f49045da3ed",
+  "prompts": {},
+  "sessions": {
+    "s_87b40e3696efed": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6d727f2b-2af9-4792-8776-17382944e721",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
