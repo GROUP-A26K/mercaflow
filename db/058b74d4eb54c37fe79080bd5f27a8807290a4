@@ -1,0 +1,20 @@
+docs/superpowers/specs/2026-06-29-loopflow-engine-layer1-daily-triage-design.md
+  s_47098c41ac940f::t_ca270af21b1bfa 1-84,89-191
+  s_47098c41ac940f::t_49d266ae3b4d7e 85-88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "db058b74d4eb54c37fe79080bd5f27a8807290a4",
+  "prompts": {},
+  "sessions": {
+    "s_47098c41ac940f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a27d82a9-1110-465b-982a-51b970e8e7de",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
