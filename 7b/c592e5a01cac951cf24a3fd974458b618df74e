@@ -1,0 +1,19 @@
+CLAUDE.md
+  s_87b40e3696efed::t_6016f4852c5a01 30-34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "7bc592e5a01cac951cf24a3fd974458b618df74e",
+  "prompts": {},
+  "sessions": {
+    "s_87b40e3696efed": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6d727f2b-2af9-4792-8776-17382944e721",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
