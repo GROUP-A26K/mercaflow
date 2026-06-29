@@ -45,6 +45,7 @@ Modèle complet dans `.env.example` (à copier en `.env.local`, jamais commité)
 - **Resend** : `RESEND_API_KEY` (présent), `RESEND_FROM_EMAIL` (domaine vérifié ; sinon fallback `onboarding@resend.dev` qui n'envoie qu'à l'email du compte Resend).
 - **Webhook Clerk** : `CLERK_WEBHOOK_SIGNING_SECRET` (Clerk Dashboard → Webhooks) — requis pour l'email de bienvenue.
 - **Sentry** : `NEXT_PUBLIC_SENTRY_DSN` (active l'envoi d'événements ; absent = no-op) + pour l'upload des source maps en CI/prod : `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`. À créer côté Sentry (action JB) + ajouter à `.env.example`/Infisical.
+- **Cursor Cloud Agents** : `CURSOR_API_KEY` (dashboard Cursor → API Keys) — pour le runner `scripts/cloud-agents.mjs` (flotte d'agents en parallèle, MER-34). Value dans Infisical (`--env=dev`), placeholder dans `.env.example`. Lancer via `infisical run -- node scripts/cloud-agents.mjs --check`. Cf. `docs/cloud-agents.md`. Optionnels : `CURSOR_MODEL`, `CURSOR_REPO`. ⚠ Accès API peut exiger un siège Team (plan Pro = à vérifier).
 
 ## Règles Next 16 (à respecter absolument)
 - **Server-first** : tout est Server Component par défaut. `'use client'` UNIQUEMENT si state /
