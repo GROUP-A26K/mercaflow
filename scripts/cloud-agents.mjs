@@ -64,6 +64,9 @@ function fail(msg) {
 }
 
 // --- client HTTP -------------------------------------------------------------
+// LÈVE une erreur (ne tue PAS le process) : en mode parallèle, l'échec d'un
+// agent ne doit pas faire tomber les autres. Le résumé final décide du code de
+// sortie. Les commandes mono-appel (--check/--list) sont rattrapées par main().
 async function api(path, { method = "GET", body } = {}) {
   const res = await fetch(`${API}${path}`, {
     method,
@@ -73,13 +76,17 @@ async function api(path, { method = "GET", body } = {}) {
     },
     body: body ? JSON.stringify(body) : undefined,
   });
-  if (res.status === 401) fail("401 — clé API invalide (CURSOR_API_KEY).");
-  if (res.status === 403)
-    fail(
-      "403 — accès refusé : l'API Cloud Agents exige peut-être un siège Team.",
-    );
-  if (res.status === 429) fail("429 — rate limit atteint, réessaie plus tard.");
-  if (!res.ok) fail(`${res.status} — ${await res.text()}`);
+  if (!res.ok) {
+    const detail =
+      res.status === 401
+        ? "clé API invalide (CURSOR_API_KEY)"
+        : res.status === 403
+          ? "accès refusé : l'API Cloud Agents exige peut-être un siège Team"
+          : res.status === 429
+            ? "rate limit atteint, réessaie plus tard"
+            : await res.text();
+    throw new Error(`HTTP ${res.status} — ${detail}`);
+  }
   return res.status === 204 ? null : res.json();
 }
 
@@ -111,7 +118,7 @@ async function launchOne(prompt, opts) {
   const res = await api("/v1/agents", { method: "POST", body });
   const id = res.agentId || res.id;
   console.log(`→ lancé : ${id}  «${prompt}»`);
-  if (!opts.wait) return res;
+  if (!opts.wait) return { id, prompt };
   return waitFor(id, prompt);
 }
 
@@ -121,12 +128,14 @@ async function waitFor(id, prompt) {
     await new Promise((r) => setTimeout(r, 10000));
     const a = await api(`/v1/agents/${id}`);
     const status = a.status || a.state;
-    if (
-      ["FINISHED", "COMPLETED", "ERROR", "FAILED", "CANCELLED"].includes(status)
-    ) {
+    if (["FINISHED", "COMPLETED"].includes(status)) {
       const pr = a.prUrl || a.target?.prUrl || "(pas de PR)";
       console.log(`✓ ${id} → ${status}  ${pr}  «${prompt}»`);
-      return a;
+      return { id, prompt, pr };
+    }
+    // Statut d'échec → LÈVE pour que l'agent soit compté en échec (exit ≠ 0).
+    if (["ERROR", "FAILED", "CANCELLED"].includes(status)) {
+      throw new Error(`${id} → ${status}  «${prompt}»`);
     }
   }
 }
@@ -167,12 +176,20 @@ async function main() {
     `Repo ${opts.repo} @ ${opts.ref} · modèle ${opts.model} · ${opts.prompts.length} agent(s)`,
   );
 
-  // Lancement en PARALLÈLE — le cœur de l'orchestration.
+  // Lancement en PARALLÈLE — le cœur de l'orchestration. allSettled isole les
+  // échecs : un agent KO n'empêche pas les autres d'aboutir ni d'être résumés.
   const results = await Promise.allSettled(
     opts.prompts.map((p) => launchOne(p, opts)),
   );
+  results.forEach((r, i) => {
+    if (r.status === "rejected") {
+      console.error(
+        `✗ agent ${i + 1} «${opts.prompts[i]}» : ${r.reason.message}`,
+      );
+    }
+  });
   const ok = results.filter((r) => r.status === "fulfilled").length;
-  console.log(`\n${ok}/${results.length} agent(s) lancé(s).`);
+  console.log(`\n${ok}/${results.length} agent(s) OK.`);
   if (ok < results.length) process.exit(1);
 }
 
