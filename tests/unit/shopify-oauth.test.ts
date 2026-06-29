@@ -20,6 +20,7 @@ describe("isValidShopDomain", () => {
     "acme.myshopify.com.evil.com",
     "https://acme.myshopify.com",
     "ACME.myshopify.com",
+    "acme-.myshopify.com",
     "",
     null,
     undefined,

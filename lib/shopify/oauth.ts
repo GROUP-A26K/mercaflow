@@ -4,7 +4,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 // Flow OAuth « legacy install » Shopify (app standalone non-embedded, token offline).
 
-const SHOP_DOMAIN_RE = /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/;
+const SHOP_DOMAIN_RE = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?\.myshopify\.com$/;
 
 /** Valide un domaine de boutique Shopify (anti-injection d'hôte). */
 export function isValidShopDomain(
@@ -76,12 +76,15 @@ export async function exchangeCodeForToken(
 ): Promise<ShopifyToken> {
   const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    },
+    body: new URLSearchParams({
       client_id: clientId,
       client_secret: clientSecret,
       code,
-    }),
+    }).toString(),
   });
 
   if (!response.ok) {

@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { upsertShopifyConnection } from "@/lib/data/shopify-connections";
-import { shopifyConfig } from "@/lib/shopify/config";
+import { SHOPIFY_SCOPES, shopifyConfig } from "@/lib/shopify/config";
 import { decryptToken } from "@/lib/shopify/crypto";
 import {
   exchangeCodeForToken,
@@ -63,6 +63,22 @@ export async function GET(request: NextRequest) {
     config.clientSecret,
     code,
   );
+
+  // La boutique doit avoir accordé tous les scopes demandés (sinon connexion inutilisable).
+  const granted = new Set(
+    scope
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
+  );
+  const missing = SHOPIFY_SCOPES.filter((value) => !granted.has(value));
+  if (missing.length > 0) {
+    return NextResponse.json(
+      { error: `Scopes insuffisants : ${missing.join(", ")}` },
+      { status: 400 },
+    );
+  }
+
   await upsertShopifyConnection({
     orgId: parsed.orgId,
     shopDomain: shop,
@@ -73,6 +89,13 @@ export async function GET(request: NextRequest) {
   const response = NextResponse.redirect(
     new URL("/dashboard?shopify=connected", request.url),
   );
-  response.cookies.delete(STATE_COOKIE);
+  // Le cookie a été posé avec path=/api/shopify → le supprimer au MÊME path.
+  response.cookies.set(STATE_COOKIE, "", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/api/shopify",
+    maxAge: 0,
+  });
   return response;
 }
