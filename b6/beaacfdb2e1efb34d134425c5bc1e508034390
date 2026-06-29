@@ -1,0 +1,21 @@
+tests/unit/shopify-schema.test.ts
+  s_9259caf80c12f7::t_ec6408b03ea14d 1-73
+supabase/migrations/0002_shopify_schema.sql
+  s_9259caf80c12f7::t_752d2c8579bc98 1-274
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "b6beaacfdb2e1efb34d134425c5bc1e508034390",
+  "prompts": {},
+  "sessions": {
+    "s_9259caf80c12f7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "598fb224-3d82-47eb-ae2b-0f686e43b280",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
