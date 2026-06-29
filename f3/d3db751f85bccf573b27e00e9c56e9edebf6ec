@@ -1,0 +1,30 @@
+.cursor/environment.json
+  s_e83107af7b0919::t_336f23ceb914b0 1-3
+scripts/cloud-agents.mjs
+  s_e83107af7b0919::t_b4a703ef2e554b 138-149
+  s_e83107af7b0919::t_44c83720df2c0d 1-77,81-123,127-137,150-160,164-179
+  s_e83107af7b0919::t_ec779bc3d6ceac 78-80,124-126,161-163
+Makefile
+  s_e83107af7b0919::t_c7e3212ed5409b 5
+  s_e83107af7b0919::t_62b9ef7467c4ce 48-50
+MEMORY.md
+  s_e83107af7b0919::t_c9e3127e646f39 48
+docs/cloud-agents.md
+  s_e83107af7b0919::t_452cafb22d904c 1-98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "f3d3db751f85bccf573b27e00e9c56e9edebf6ec",
+  "prompts": {},
+  "sessions": {
+    "s_e83107af7b0919": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e9b0edfd-5f39-4553-81d5-87c5a063ae16",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
