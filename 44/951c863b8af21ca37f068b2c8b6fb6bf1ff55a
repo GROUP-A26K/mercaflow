@@ -1,0 +1,33 @@
+scripts/agents.sh
+  s_e83107af7b0919::t_482e3e8f180edb 12-15,17,34-51,64-75,77,79,81-87,95-96,99-101,103-107,109-138,140,144,146,151,156
+  s_e83107af7b0919::t_daa691702c001b 1-11,16,18-33,52-63,76,78,80,88-94,97-98,102,108,139,141-143,145,147-150,152-155,157-159
+scripts/wt.sh
+  s_e83107af7b0919::t_f555cfadb5dddc 1-8,13-85
+  s_e83107af7b0919::t_c15da8ef26ab8a 9-12
+.gitignore
+  s_e83107af7b0919::t_edba9bbfb0bf9f 40-42
+Makefile
+  s_e83107af7b0919::t_cac036d553e0f6 5
+  s_e83107af7b0919::t_0c9830214fe620 41-47
+docs/worktrees.md
+  s_e83107af7b0919::t_1babc7bf6810b0 1-34,39-106
+  s_e83107af7b0919::t_36894e6ba4b038 35-38
+CLAUDE.md
+  s_e83107af7b0919::t_4683e4c5b3f9df 22-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "44951c863b8af21ca37f068b2c8b6fb6bf1ff55a",
+  "prompts": {},
+  "sessions": {
+    "s_e83107af7b0919": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e9b0edfd-5f39-4553-81d5-87c5a063ae16",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
