@@ -1,9 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
   extractLinearId,
   shouldSkipSource,
   injectLinearId,
+  run,
 } from "@/scripts/git-hooks/prepare-commit-msg.mjs";
 
 describe("extractLinearId", () => {
@@ -79,5 +84,37 @@ describe("injectLinearId", () => {
   it("ne touche pas le message si la branche n'a pas d'ID", () => {
     const msg = "chore: bricole";
     expect(injectLinearId(msg, "main")).toBe(msg);
+  });
+});
+
+describe("run (intégration fichier)", () => {
+  const branch = "chore/JB/MER-9-prepare-commit-msg";
+  let dir: string;
+  let msgFile: string;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), "prepare-commit-msg-"));
+    msgFile = join(dir, "COMMIT_EDITMSG");
+  });
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("écrit l'ID dans le fichier message (source -m)", () => {
+    writeFileSync(msgFile, "feat: titre\n");
+    run([msgFile, "message"], branch);
+    expect(readFileSync(msgFile, "utf8")).toBe("feat: titre\n\nMER-9");
+  });
+
+  it("ne modifie pas le fichier sur une source merge", () => {
+    writeFileSync(msgFile, "Merge branch 'x'\n");
+    run([msgFile, "merge"], branch);
+    expect(readFileSync(msgFile, "utf8")).toBe("Merge branch 'x'\n");
+  });
+
+  it("ne fait rien sans chemin de fichier", () => {
+    // ne doit pas lever (un hook ne bloque jamais le commit)
+    expect(() => run([], branch)).not.toThrow();
   });
 });

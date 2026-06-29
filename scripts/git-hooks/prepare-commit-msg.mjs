@@ -9,6 +9,7 @@
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 
 /**
  * Un ID Linear = préfixe d'équipe alphanumérique commençant par une lettre,
@@ -64,7 +65,9 @@ export function injectLinearId(message, branch) {
   if (!id) return message;
   if (alreadyPresent(message, id)) return message;
 
-  const lines = message.split("\n");
+  // Normalise les fins de ligne CRLF (Windows / core.autocrlf) pour éviter un
+  // mélange \r\n / \n dans la sortie.
+  const lines = message.replace(/\r\n/g, "\n").split("\n");
   const commentIdx = lines.findIndex((line) => line.startsWith("#"));
   const splitAt = commentIdx === -1 ? lines.length : commentIdx;
 
@@ -98,15 +101,27 @@ export function run(argv, branch) {
 }
 
 // Exécution directe (hook) — pas lors d'un import (tests).
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const { execFileSync } = await import("node:child_process");
-  let branch = "";
+// `pathToFileURL` applique l'encodage des URLs (espaces, non-ASCII) ; une
+// concaténation naïve `file://${argv}` casserait la comparaison sur les chemins
+// contenant un espace.
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  // Un hook ne doit JAMAIS bloquer un commit : toute erreur est avalée (le
+  // commit part avec le message inchangé) et on sort en code 0.
   try {
-    branch = execFileSync("git", ["symbolic-ref", "--short", "HEAD"], {
-      encoding: "utf8",
-    }).trim();
-  } catch {
-    // HEAD détachée (rebase, bisect…) : pas de branche → on ne fait rien.
+    const { execFileSync } = await import("node:child_process");
+    let branch = "";
+    try {
+      branch = execFileSync("git", ["symbolic-ref", "--short", "HEAD"], {
+        encoding: "utf8",
+      }).trim();
+    } catch {
+      // HEAD détachée (rebase, bisect…) : pas de branche → on ne fait rien.
+    }
+    run(process.argv.slice(2), branch);
+  } catch (err) {
+    process.stderr.write(`[prepare-commit-msg] erreur ignorée : ${err}\n`);
   }
-  run(process.argv.slice(2), branch);
 }
