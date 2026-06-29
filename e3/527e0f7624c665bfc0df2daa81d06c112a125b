@@ -1,0 +1,23 @@
+CLAUDE.md
+  s_e83107af7b0919::t_c3cb9574d2eb13 31
+scripts/agents.sh
+  s_e83107af7b0919::t_b884e9163e66b4 135-137
+docs/worktrees.md
+  s_e83107af7b0919::t_df3ce5e3342dbc 55-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "e3527e0f7624c665bfc0df2daa81d06c112a125b",
+  "prompts": {},
+  "sessions": {
+    "s_e83107af7b0919": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e9b0edfd-5f39-4553-81d5-87c5a063ae16",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
