@@ -1,0 +1,22 @@
+scripts/cloud-agents.mjs
+  s_e83107af7b0919::t_88258219ac5c38 121,131,134-138
+  s_e83107af7b0919::t_eb52ca4c021e1c 179-180,184-185,189-190,192
+  s_e83107af7b0919::t_0994d0dff0c00a 186-188
+  s_e83107af7b0919::t_d2ff4bc3fa805e 67-69,79-89
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "844466967da74b78ad300f906a8aeeb23e205e0e",
+  "prompts": {},
+  "sessions": {
+    "s_e83107af7b0919": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e9b0edfd-5f39-4553-81d5-87c5a063ae16",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
