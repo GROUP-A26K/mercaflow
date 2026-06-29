@@ -12,8 +12,11 @@ import {
 
 vi.mock("server-only", () => ({}));
 
-const upsertSpy = vi.fn().mockResolvedValue({ error: null });
-const fromSpy = vi.fn(() => ({ upsert: upsertSpy }));
+const { upsertSpy, fromSpy } = vi.hoisted(() => {
+  const upsertSpy = vi.fn().mockResolvedValue({ error: null });
+  const fromSpy = vi.fn(() => ({ upsert: upsertSpy }));
+  return { upsertSpy, fromSpy };
+});
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({ from: fromSpy }),
 }));

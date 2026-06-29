@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-const createClientSpy = vi.fn((..._args: unknown[]) => ({ ok: true }));
+const { createClientSpy } = vi.hoisted(() => ({
+  createClientSpy: vi.fn((..._args: unknown[]) => ({ ok: true })),
+}));
 vi.mock("@supabase/supabase-js", () => ({
   createClient: (...args: unknown[]) => createClientSpy(...args),
 }));
