@@ -25,3 +25,16 @@ export const requireUser = cache(async () => {
   if (!userId) redirect("/sign-in");
   return getCurrentUser();
 });
+
+/**
+ * Exige un utilisateur connecté ET une organisation Clerk active.
+ * Redirige vers /sign-in (non connecté) ou /select-organization (pas d'org active).
+ * La tenancy des données est org-scopée (RLS Supabase sur le claim d'org du JWT Clerk),
+ * donc toute la zone (app) exige une org active. Renvoie `{ userId, orgId }`.
+ */
+export const requireOrg = cache(async () => {
+  const { userId, orgId } = await auth();
+  if (!userId) redirect("/sign-in");
+  if (!orgId) redirect("/select-organization");
+  return { userId, orgId };
+});
