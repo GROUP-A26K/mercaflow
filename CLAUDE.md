@@ -27,8 +27,11 @@ Les règles **produit & techniques** (stack, archi, SEO, perf, tests) sont dans
   `eslint-config-prettier` neutralise les règles de format d'ESLint (pas de double emploi).
 - **Commits** : `commitlint` (hook `commit-msg`) valide les Conventional Commits ; `lint-staged`
   (hook `pre-commit`) lance `eslint --fix` + `prettier --write` sur les fichiers stagés.
-- Une PR sans CI verte n'est pas mergeable (garde-fou process ; protection de branche
-  à activer côté GitHub quand le plan le permet).
+- Une PR sans CI verte n'est pas mergeable : la **protection de branche GitHub** sur `main`
+  est active (MER-8) — PR obligatoire, checks `check` + `audit` requis, branche à jour
+  (`strict`), conversation resolution (gate cubic) et historique linéaire. Pas de reviewer
+  imposé (0) ni `enforce_admins` : CC/JB peuvent self-merger une PR à CI verte, mais les
+  push directs sur `main` sont bloqués.
 - **TDD attendu** sur la logique métier : test d'abord (RED), implémentation (GREEN),
   refacto. À chaque changement de comportement : créer/mettre à jour les tests
   (Vitest unit, Playwright e2e — cf. AGENTS.md).
