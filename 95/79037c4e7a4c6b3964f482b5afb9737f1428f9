@@ -1,0 +1,23 @@
+.husky/prepare-commit-msg
+  s_a13ecf140c11c7::t_123026dd39ef36 1
+scripts/git-hooks/prepare-commit-msg.mjs
+  s_a13ecf140c11c7::t_fc44ea7a8cfd1c 1-112
+tests/unit/prepare-commit-msg.test.ts
+  s_a13ecf140c11c7::t_93e943a4a98658 1-83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "9579037c4e7a4c6b3964f482b5afb9737f1428f9",
+  "prompts": {},
+  "sessions": {
+    "s_a13ecf140c11c7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0e2559a5-43e0-4ec5-b859-65f58b64b6fc",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
