@@ -146,4 +146,5 @@ lib/
 - `error.tsx`/`global-error.tsx` : Next 16 nomme la prop de relance `unstable_retry` (PAS `reset`).
 - Vitest : utiliser le plugin **SWC** (conflit Babel avec shadcn sinon). Testing Library : cleanup requis entre tests.
 - ESLint Next 16 strict (`react-hooks`) : pas de `setState` synchrone dans un effet.
+- **ESLint reste en v9** (MER-30) : ESLint 10 supprime l'API `context.getFilename()`, encore utilisée par `eslint-plugin-react@7.37.5` (embarqué par `eslint-config-next@16.2.9`) → `npm run lint` plante (`TypeError: contextOrFilename.getFilename is not a function`). Aucune version d'`eslint-plugin-react` ne supporte encore v10 : blocage upstream. Le bump majeur d'`eslint` est ignoré dans `.github/dependabot.yml` ; à rouvrir quand `eslint-config-next` déclarera le support `eslint ^10`.
 - Toujours vérifier la doc embarquée avant d'utiliser une API Next (breaking changes).
