@@ -1,0 +1,33 @@
+docs/superpowers/specs/2026-06-29-loopflow-engine-layer1-daily-triage-design.md
+  s_47098c41ac940f::t_0a599034dcde51 66
+  s_47098c41ac940f::t_d0fccaa99bfec2 188-196
+  s_47098c41ac940f::t_ddd8cb9de7d50b 106-109
+  s_47098c41ac940f::t_71b124a9a96108 103
+  s_47098c41ac940f::t_bf0f6341e0ded3 142
+  s_47098c41ac940f::t_a496e0b886b2bb 152
+  s_87b40e3696efed::t_637abe90f70f3e 32,88-89
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "791c593ddb758cee97f30561381d40450676ae1d",
+  "prompts": {},
+  "sessions": {
+    "s_47098c41ac940f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a27d82a9-1110-465b-982a-51b970e8e7de",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    },
+    "s_87b40e3696efed": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6d727f2b-2af9-4792-8776-17382944e721",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
