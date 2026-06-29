@@ -16,10 +16,12 @@ const STATE_TTL_MS = 10 * 60 * 1000;
 // Démarre le flow OAuth : lie un `state` (nonce) à l'org active dans un cookie chiffré
 // httpOnly, puis redirige vers l'écran de consentement Shopify (token offline).
 export async function GET(request: NextRequest) {
-  // Anti-CSRF : l'install démarre un flow OAuth lié à l'org de la session ; il ne doit être
-  // déclenché que depuis notre app, jamais via un lien cross-site. Les navigateurs modernes
-  // envoient `Sec-Fetch-Site` → on rejette explicitement les requêtes cross-site.
-  if (request.headers.get("sec-fetch-site") === "cross-site") {
+  // Anti-CSRF (fail-closed) : l'install démarre un flow OAuth lié à l'org de la session.
+  // On n'autorise que les navigations same-origin / same-site / directes (`none`). Tout le
+  // reste — y compris l'ABSENCE d'en-tête — est rejeté (un navigateur moderne envoie toujours
+  // `Sec-Fetch-Site` sur une navigation, donc l'absence = client non fiable / cross-site).
+  const fetchSite = request.headers.get("sec-fetch-site");
+  if (!fetchSite || !["same-origin", "same-site", "none"].includes(fetchSite)) {
     return NextResponse.json(
       { error: "Origine non autorisée" },
       { status: 403 },
