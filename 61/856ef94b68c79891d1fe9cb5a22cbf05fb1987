@@ -1,0 +1,24 @@
+app/(app)/dashboard/page.tsx
+  s_668f91a70f50e8::t_f8ab55ec95c09f 1,5,17-24,32-43
+  s_668f91a70f50e8::t_509f2dbbdb0284 44
+app/(app)/dashboard/_components/connect-shopify-card.tsx
+  s_668f91a70f50e8::t_48d0ab8a25121d 1-56
+tests/unit/connect-shopify-card.test.tsx
+  s_668f91a70f50e8::t_623d2b913b652b 1-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "61856ef94b68c79891d1fe9cb5a22cbf05fb1987",
+  "prompts": {},
+  "sessions": {
+    "s_668f91a70f50e8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ebb00414-6a8d-4fed-9e74-6c7b38a19bc9",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
