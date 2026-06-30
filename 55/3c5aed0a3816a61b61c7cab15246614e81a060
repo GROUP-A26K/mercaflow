@@ -1,0 +1,19 @@
+app/api/shopify/webhooks/bulk-operations-finish/route.ts
+  s_7acb163415318a::t_e42ef59628b661 68-81
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "553c5aed0a3816a61b61c7cab15246614e81a060",
+  "prompts": {},
+  "sessions": {
+    "s_7acb163415318a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "073c04cd-f1e4-49be-aaed-901038f82bf7",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
