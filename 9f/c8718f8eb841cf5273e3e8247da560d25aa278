@@ -1,0 +1,25 @@
+app/api/shopify/webhooks/bulk-operations-finish/route.ts
+  s_7acb163415318a::t_4c707e4870ae51 52-69
+supabase/migrations/0003_shopify_bulk_tracking.sql
+  s_7acb163415318a::t_0b07ea2f5b83e9 28-31
+lib/shopify/ingestion.ts
+  s_7acb163415318a::t_e8bb8000b45874 192-200
+tests/unit/shopify-ingestion.test.ts
+  s_7acb163415318a::t_4da08ca147113c 256-280
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "9fc8718f8eb841cf5273e3e8247da560d25aa278",
+  "prompts": {},
+  "sessions": {
+    "s_7acb163415318a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "073c04cd-f1e4-49be-aaed-901038f82bf7",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
