@@ -1,0 +1,50 @@
+tests/unit/shopify-ingestion.test.ts
+  s_7acb163415318a::t_de9154474887dc 144-147
+  s_7acb163415318a::t_875cfca0863a46 135-143,148-156
+lib/shopify/bulk.ts
+  s_7acb163415318a::t_fa65a3fa1a45e8 91-93,95
+tests/unit/shopify-bulk.test.ts
+  s_7acb163415318a::t_2da7042b2dc4b3 20,25-44
+tests/unit/shopify-connections-bulk.test.ts
+  s_7acb163415318a::t_de9154474887dc 56-58,82-85,95-98
+  s_7acb163415318a::t_e723e42b6afcb7 1-55,59-81,86-94,99-101
+app/api/shopify/webhooks/bulk-operations-finish/route.ts
+  s_7acb163415318a::t_14b66a336640a5 5
+  s_7acb163415318a::t_5bd005c64a3c87 54-60,63
+lib/data/shopify-connections.ts
+  s_7acb163415318a::t_c4807d2776ff16 107-108,110-132,134,141
+MEMORY.md
+  s_7acb163415318a::t_7cfc1c95934211 134
+lib/shopify/admin-graphql.ts
+  s_7acb163415318a::t_fafa6f9107fb87 70,73-75,79,81-87
+  s_7acb163415318a::t_b5fce0ab851298 27-31
+  s_7acb163415318a::t_82bf0593f1e473 3-4
+lib/shopify/ingestion.ts
+  s_7acb163415318a::t_726b67e2994e02 104-117
+app/api/shopify/ingest/route.ts
+  s_7acb163415318a::t_de9154474887dc 31-34
+  s_7acb163415318a::t_17913fff400f68 2,8,27-30,35-36,64-71,73-74
+supabase/migrations/0003_shopify_bulk_tracking.sql
+  s_7acb163415318a::t_66736c16d75ef8 1-18
+lib/shopify/webhooks.ts
+  s_7acb163415318a::t_feadefb7e0119a 24,26-30
+tests/unit/shopify-webhooks.test.ts
+  s_7acb163415318a::t_3e46835fd662c2 41-45,47-48
+  s_7acb163415318a::t_86489a5f4480fd 46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "87fa140df25a7aaa04bcebe3e244169dfe4bebd7",
+  "prompts": {},
+  "sessions": {
+    "s_7acb163415318a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "073c04cd-f1e4-49be-aaed-901038f82bf7",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
