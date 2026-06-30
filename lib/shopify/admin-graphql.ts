@@ -1,5 +1,7 @@
 import "server-only";
 
+import { isValidShopDomain } from "@/lib/shopify/oauth";
+
 // Client GraphQL Admin Shopify (MER-26). Endpoint pinné à la version d'API configurée
 // (2026-04 par défaut, cf. shopifyConfig). Authentifié par le token offline déchiffré
 // de la `shopify_connections`. ⚠️ Server-only : le token ne doit jamais fuiter au client.
@@ -22,6 +24,11 @@ export interface AdminGraphQLClient {
 export function createAdminGraphQLClient(
   params: AdminClientParams,
 ): AdminGraphQLClient {
+  // Valider le domaine avant de l'interpoler dans l'hôte : empêche tout appelant futur
+  // d'envoyer le token Shopify vers un domaine arbitraire (injection d'hôte).
+  if (!isValidShopDomain(params.shop)) {
+    throw new Error(`Domaine de boutique Shopify invalide : ${params.shop}`);
+  }
   const endpoint = `https://${params.shop}/admin/api/${params.apiVersion}/graphql.json`;
 
   return {
@@ -60,15 +67,23 @@ export async function* streamTextFromUrl(url: string): AsyncIterable<string> {
   }
   const decoder = new TextDecoder();
   const reader = response.body.getReader();
+  let done = false;
   try {
     for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      if (value) yield decoder.decode(value, { stream: true });
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      if (chunk.value) yield decoder.decode(chunk.value, { stream: true });
     }
     const tail = decoder.decode();
     if (tail) yield tail;
+    done = true;
   } finally {
-    reader.releaseLock();
+    // Si le consommateur s'arrête tôt (break/throw), `cancel()` interrompt le téléchargement
+    // restant ; en lecture complète, `releaseLock()` suffit.
+    if (done) {
+      reader.releaseLock();
+    } else {
+      await reader.cancel().catch(() => {});
+    }
   }
 }

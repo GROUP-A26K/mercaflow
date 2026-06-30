@@ -38,6 +38,14 @@ describe("verifyWebhookHmac", () => {
   it("rejette un header de longueur différente sans planter (timingSafeEqual)", () => {
     expect(verifyWebhookHmac(body, "dG9vc2hvcnQ=", SECRET)).toBe(false);
   });
+
+  it("rejette un base64 non canonique qui décode pourtant aux bons octets", () => {
+    // Même signature valide + un caractère ignoré au décodage (newline) → décode aux 32
+    // octets attendus mais l'encodage n'est pas canonique → doit être rejeté.
+    const valid = sign(body);
+    expect(verifyWebhookHmac(body, valid, SECRET)).toBe(true);
+    expect(verifyWebhookHmac(body, `${valid}\n`, SECRET)).toBe(false);
+  });
 });
 
 describe("parseBulkFinishPayload", () => {

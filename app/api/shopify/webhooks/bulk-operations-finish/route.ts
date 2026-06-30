@@ -2,7 +2,7 @@ import { after, NextResponse, type NextRequest } from "next/server";
 
 import {
   connectionAccessToken,
-  getActiveConnectionByShopDomain,
+  getConnectionByBulkOperation,
 } from "@/lib/data/shopify-connections";
 import { createAdminGraphQLClient } from "@/lib/shopify/admin-graphql";
 import { shopifyConfig } from "@/lib/shopify/config";
@@ -51,10 +51,16 @@ export async function POST(req: NextRequest) {
 
   after(async () => {
     try {
-      const connection = await getActiveConnectionByShopDomain(shopDomain);
+      // Corréler par l'op id annoncé (et non par domaine seul) : un même domaine peut
+      // être connecté par plusieurs orgs → résoudre par domaine seul ingérerait dans la
+      // mauvaise org (cross-tenant). L'op id a été mémorisé au lancement (ingest route).
+      const connection = await getConnectionByBulkOperation(
+        shopDomain,
+        payload.bulkOperationId,
+      );
       if (!connection) {
         console.warn(
-          `Webhook bulk : aucune connexion active pour ${shopDomain}`,
+          `Webhook bulk : aucune connexion ne correspond à ${payload.bulkOperationId} (${shopDomain})`,
         );
         return;
       }

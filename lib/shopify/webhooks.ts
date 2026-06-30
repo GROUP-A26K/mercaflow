@@ -21,12 +21,13 @@ export function verifyWebhookHmac(
   const expected = createHmac("sha256", secret)
     .update(rawBody, "utf8")
     .digest();
-  // `Buffer.from(_, "base64")` est permissif (ignore les caractères invalides, ne lève pas).
-  // Une entrée malformée donne juste un buffer de mauvaise taille → rejeté ci-dessous.
+  // `Buffer.from(_, "base64")` est permissif (ignore caractères invalides / padding, ne lève pas).
   const provided = Buffer.from(hmacHeader, "base64");
-  return (
-    expected.length === provided.length && timingSafeEqual(expected, provided)
-  );
+  if (provided.length !== expected.length) return false;
+  // Rejeter les encodages base64 NON canoniques (le ré-encodage diffère de l'en-tête) :
+  // un en-tête malformé ne doit pas être accepté même s'il décode à la bonne taille.
+  if (provided.toString("base64") !== hmacHeader) return false;
+  return timingSafeEqual(expected, provided);
 }
 
 export interface BulkFinishPayload {

@@ -88,8 +88,11 @@ export const WEBHOOK_SUBSCRIPTION_CREATE_MUTATION = `mutation CreateBulkFinishWe
 }`;
 
 /** Liste les abonnements `bulk_operations/finish` existants (idempotence). */
+// first: 250 (max d'une connexion GraphQL) → couvre largement le seul abonnement que
+// notre app crée pour ce topic ; évite qu'une page trop courte rate notre callback et
+// fasse accumuler des doublons.
 export const BULK_FINISH_WEBHOOKS_QUERY = `query BulkFinishWebhooks {
-  webhookSubscriptions(first: 25, topics: [BULK_OPERATIONS_FINISH]) {
+  webhookSubscriptions(first: 250, topics: [BULK_OPERATIONS_FINISH]) {
     edges {
       node {
         id

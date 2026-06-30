@@ -101,11 +101,20 @@ export async function startCatalogIngestion(
     throw new BulkAlreadyRunningError();
   }
 
-  return parseBulkOperationRunResult(
-    await params.client.query(BULK_OPERATION_RUN_MUTATION, {
-      query: BULK_CATALOG_QUERY,
-    }),
-  );
+  try {
+    return parseBulkOperationRunResult(
+      await params.client.query(BULK_OPERATION_RUN_MUTATION, {
+        query: BULK_CATALOG_QUERY,
+      }),
+    );
+  } catch (error) {
+    // Course entre le pré-check et la mutation : Shopify peut rejeter avec un userError
+    // « already running » → le mapper aussi sur BulkAlreadyRunningError (→ 409, pas 502).
+    if (error instanceof Error && /already running/i.test(error.message)) {
+      throw new BulkAlreadyRunningError(error.message);
+    }
+    throw error;
+  }
 }
 
 export interface ProcessFinishParams {

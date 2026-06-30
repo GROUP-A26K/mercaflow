@@ -17,11 +17,31 @@ describe("BULK_CATALOG_QUERY", () => {
     expect(BULK_CATALOG_QUERY).toMatch(/metafields/);
   });
 
-  it("respecte la limite bulk : ≤ 5 connexions, profondeur ≤ 2", () => {
+  it("respecte les limites bulk : ≤ 5 connexions et imbrication ≤ 2 niveaux sous la racine", () => {
     // `edges {` marque chaque connexion dans la requête bulk.
     const connections = (BULK_CATALOG_QUERY.match(/edges\s*\{/g) ?? []).length;
     expect(connections).toBeGreaterThanOrEqual(1);
     expect(connections).toBeLessThanOrEqual(5);
+
+    // Profondeur d'imbrication des connexions : on suit la pile d'accolades et on compte
+    // celles ouvertes juste après un `edges`. La racine (products) compte 1 → la limite
+    // Shopify « 2 niveaux sous la racine » = profondeur max d'`edges` imbriqués ≤ 3.
+    const tokens = BULK_CATALOG_QUERY.match(/[A-Za-z_]+|[{}]/g) ?? [];
+    const stack: boolean[] = [];
+    let lastWord = "";
+    let maxDepth = 0;
+    for (const token of tokens) {
+      if (token === "{") {
+        stack.push(lastWord === "edges");
+        const depth = stack.filter(Boolean).length;
+        if (depth > maxDepth) maxDepth = depth;
+      } else if (token === "}") {
+        stack.pop();
+      } else {
+        lastWord = token;
+      }
+    }
+    expect(maxDepth).toBeLessThanOrEqual(3);
   });
 });
 

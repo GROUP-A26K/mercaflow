@@ -104,20 +104,42 @@ export async function getActiveConnectionForOrg(
 }
 
 /**
- * Connexion active à partir du domaine de boutique (pour le webhook : pas de session Clerk,
- * la boutique est identifiée par l'en-tête `X-Shopify-Shop-Domain`). En cas de connexions
- * multiples pour le même domaine (orgs distinctes), on prend la plus récente.
+ * Mémorise l'id de la bulk operation lancée par une connexion (pour corréler le webhook
+ * `bulk_operations/finish` à la bonne org). Service-role (déclenché côté org authentifiée).
  */
-export async function getActiveConnectionByShopDomain(
+export async function setConnectionBulkOperation(
+  connectionId: string,
+  bulkOperationId: string,
+): Promise<void> {
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("shopify_connections")
+    .update({ last_bulk_operation_id: bulkOperationId })
+    .eq("id", connectionId);
+  if (error) {
+    throw new Error(
+      `Suivi de la bulk operation Shopify échoué : ${error.message}`,
+    );
+  }
+}
+
+/**
+ * Connexion qui a lancé une bulk operation donnée, résolue par `(shop_domain, op id)`.
+ * Pour le webhook : pas de session Clerk (la boutique vient de l'en-tête `X-Shopify-Shop-Domain`,
+ * l'op id du payload). Corréler par l'op id lancé — et non par domaine seul — évite d'ingérer
+ * le catalogue dans la mauvaise org quand un même domaine est connecté par plusieurs orgs.
+ */
+export async function getConnectionByBulkOperation(
   shopDomain: string,
+  bulkOperationId: string,
 ): Promise<ShopifyConnection | null> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("shopify_connections")
     .select(CONNECTION_COLUMNS)
     .eq("shop_domain", shopDomain)
+    .eq("last_bulk_operation_id", bulkOperationId)
     .eq("status", "active")
-    .order("installed_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (error) {

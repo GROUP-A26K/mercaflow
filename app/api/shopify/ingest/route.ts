@@ -1,9 +1,11 @@
 import { auth } from "@clerk/nextjs/server";
+import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 
 import {
   connectionAccessToken,
   getActiveConnectionForOrg,
+  setConnectionBulkOperation,
 } from "@/lib/data/shopify-connections";
 import { createAdminGraphQLClient } from "@/lib/shopify/admin-graphql";
 import { shopifyConfig } from "@/lib/shopify/config";
@@ -22,6 +24,16 @@ export const dynamic = "force-dynamic";
 // → fail-closed sur NEXT_PUBLIC_SITE_URL (PAS de repli sur l'origine de la requête, qui
 // dérive du header Host injectable et pourrait rediriger les webhooks vers un tiers).
 export async function POST() {
+  // Anti-CSRF (fail-closed) : POST mutatif lié à l'org de la session. On n'autorise que les
+  // navigations same-origin / same-site / directes ; l'absence d'en-tête = client non fiable.
+  const fetchSite = (await headers()).get("sec-fetch-site");
+  if (!fetchSite || !["same-origin", "same-site", "none"].includes(fetchSite)) {
+    return NextResponse.json(
+      { error: "Origine non autorisée" },
+      { status: 403 },
+    );
+  }
+
   const { orgId } = await auth();
   if (!orgId) {
     return NextResponse.json(
@@ -46,16 +58,20 @@ export async function POST() {
     );
   }
 
-  const config = shopifyConfig();
-  const client = createAdminGraphQLClient({
-    shop: connection.shopDomain,
-    accessToken: connectionAccessToken(connection),
-    apiVersion: config.apiVersion,
-  });
   const callbackUrl = `${base}${BULK_FINISH_WEBHOOK_PATH}`;
 
   try {
+    // Dans le try : `connectionAccessToken` lève si le token est révoqué/malformé
+    // → réponse JSON 502 plutôt qu'un 500 non capturé.
+    const config = shopifyConfig();
+    const client = createAdminGraphQLClient({
+      shop: connection.shopDomain,
+      accessToken: connectionAccessToken(connection),
+      apiVersion: config.apiVersion,
+    });
     const op = await startCatalogIngestion({ client, callbackUrl });
+    // Corréler le futur webhook finish à CETTE connexion/org (anti cross-tenant).
+    await setConnectionBulkOperation(connection.id, op.id);
     // 202 : l'import est lancé en arrière-plan ; le résultat arrive via le webhook finish.
     return NextResponse.json(
       { ok: true, bulkOperationId: op.id, status: op.status },

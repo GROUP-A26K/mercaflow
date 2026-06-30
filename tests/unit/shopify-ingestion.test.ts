@@ -132,6 +132,28 @@ describe("startCatalogIngestion", () => {
     ).rejects.toBeInstanceOf(BulkAlreadyRunningError);
     expect(calls).not.toContain("run");
   });
+
+  it("mappe le userError « already running » de la mutation sur BulkAlreadyRunningError (course)", async () => {
+    // Le pré-check passe (pas d'op courante) mais la mutation est rejetée par Shopify.
+    const { client } = fakeClient({
+      run: () => ({
+        data: {
+          bulkOperationRunQuery: {
+            bulkOperation: null,
+            userErrors: [
+              {
+                field: null,
+                message: "A bulk query operation is already running.",
+              },
+            ],
+          },
+        },
+      }),
+    });
+    await expect(
+      startCatalogIngestion({ client, callbackUrl: CALLBACK }),
+    ).rejects.toBeInstanceOf(BulkAlreadyRunningError);
+  });
 });
 
 describe("processBulkOperationFinish", () => {
