@@ -25,12 +25,11 @@ create index idx_shopify_bulk_operations_connection
 create index idx_shopify_bulk_operations_org
   on public.shopify_bulk_operations (org_id);
 
--- RLS org-scopée (cohérent avec 0002). Les écritures machine (ingest + webhook) passent
--- par le client service-role qui contourne la RLS ; les lectures authentifiées restent
--- limitées à l'org active.
+-- RLS : table d'état SENSIBLE écrite UNIQUEMENT par le client service-role (ingest + webhook),
+-- qui contourne la RLS. Pas de policy INSERT/UPDATE/DELETE pour le rôle authentifié : un tenant
+-- ne doit jamais pouvoir réserver/empoisonner un `bulk_operation_id` que le webhook corrèle
+-- ensuite à une connexion. Seule une lecture org-scopée est autorisée (visibilité dashboard).
 alter table public.shopify_bulk_operations enable row level security;
 
 create policy shopify_bulk_operations on public.shopify_bulk_operations
   for select using (public.clerk_org_id() = org_id);
-create policy shopify_bulk_operations_insert on public.shopify_bulk_operations
-  for insert with check (public.clerk_org_id() = org_id);

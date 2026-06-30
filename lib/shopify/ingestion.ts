@@ -189,5 +189,14 @@ export async function processBulkOperationFinish(
   }
   await flush();
 
+  // Vérifier l'exhaustivité : `objectCount` = nombre total d'objets du JSONL (toutes lignes).
+  // Un download tronqué laisserait un catalogue partiel passé pour un succès → statut
+  // `incomplete` distinct, journalisé côté webhook (re-déclencher re-fetch tout, idempotent).
+  const expected =
+    operation.objectCount != null ? Number(operation.objectCount) : null;
+  if (expected != null && Number.isFinite(expected) && ingested !== expected) {
+    return { status: "incomplete", ingested, errorCode: null };
+  }
+
   return { status: operation.status, ingested, errorCode: null };
 }

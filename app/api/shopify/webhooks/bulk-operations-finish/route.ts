@@ -49,20 +49,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Payload invalide" }, { status: 400 });
   }
 
+  // Résoudre la connexion AVANT de répondre : si la ligne de corrélation manque encore
+  // (lag de réplication, ou insert d'ingest en échec), répondre 503 → Shopify retente
+  // (backoff ~48 h) plutôt que de perdre l'import sur un 200 définitif.
+  const connection = await getConnectionByBulkOperationId(
+    payload.bulkOperationId,
+  );
+  if (!connection) {
+    console.warn(
+      `Webhook bulk : aucune connexion ne correspond à ${payload.bulkOperationId} (${shopDomain}) — retry`,
+    );
+    return NextResponse.json(
+      { error: "Corrélation introuvable, retry" },
+      { status: 503 },
+    );
+  }
+
+  // L'ingestion réelle (download + streaming) tourne en tâche de fond : un gros catalogue
+  // dépasse le budget temps d'un webhook (~5 s côté Shopify).
   after(async () => {
     try {
-      // Corréler par l'op id (globalement unique → 1 org), mémorisé au lancement dans
-      // `shopify_bulk_operations`. Évite l'ingestion cross-tenant ET la perte d'un webhook
-      // tardif (chaque op a sa propre ligne, jamais écrasée).
-      const connection = await getConnectionByBulkOperationId(
-        payload.bulkOperationId,
-      );
-      if (!connection) {
-        console.warn(
-          `Webhook bulk : aucune connexion ne correspond à ${payload.bulkOperationId} (${shopDomain})`,
-        );
-        return;
-      }
       const client = createAdminGraphQLClient({
         shop: connection.shopDomain,
         accessToken: connectionAccessToken(connection),

@@ -253,6 +253,31 @@ describe("processBulkOperationFinish", () => {
     expect(result.errorCode).toBe("INTERNAL_SERVER_ERROR");
   });
 
+  it("signale `incomplete` si le nombre ingéré diffère d'objectCount (download tronqué)", async () => {
+    const jsonl = [
+      '{"id":"gid://shopify/Product/1"}',
+      '{"id":"gid://shopify/Product/2"}',
+    ].join("\n");
+    const { client } = fakeClient({
+      byId: byIdNode({
+        id: OP_ID,
+        status: "COMPLETED",
+        errorCode: null,
+        url: "https://storage.example/result.jsonl",
+        objectCount: "5", // Shopify annonce 5 objets, on n'en reçoit que 2.
+      }),
+    });
+    const result = await processBulkOperationFinish({
+      client,
+      connection,
+      bulkOperationId: OP_ID,
+      streamText: () => chunks(jsonl),
+      insert: async () => {},
+    });
+    expect(result.status).toBe("incomplete");
+    expect(result.ingested).toBe(2);
+  });
+
   it("renvoie status `none` si l'op est introuvable (node null)", async () => {
     const { client } = fakeClient({ byId: () => ({ data: { node: null } }) });
     const result = await processBulkOperationFinish({
