@@ -1,0 +1,21 @@
+tests/unit/shopify-ingestion.test.ts
+  s_7acb163415318a::t_0c973d932e29f9 256-278
+lib/shopify/ingestion.ts
+  s_7acb163415318a::t_ba383bc6a13a0e 167-175
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "046358966949d6490313015404f48704ee8c4be0",
+  "prompts": {},
+  "sessions": {
+    "s_7acb163415318a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "073c04cd-f1e4-49be-aaed-901038f82bf7",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
