@@ -63,7 +63,7 @@ export const BULK_OPERATION_RUN_MUTATION = `mutation BulkCatalogRun($query: Stri
   }
 }`;
 
-/** Récupère l'opération bulk de type QUERY courante (statut + url du JSONL). */
+/** Récupère l'opération bulk de type QUERY courante (pré-check « 1 bulk query / shop »). */
 export const CURRENT_BULK_OPERATION_QUERY = `query CurrentBulkOperation {
   currentBulkOperation(type: QUERY) {
     id
@@ -73,6 +73,23 @@ export const CURRENT_BULK_OPERATION_QUERY = `query CurrentBulkOperation {
     url
     createdAt
     completedAt
+  }
+}`;
+
+/**
+ * Récupère une opération bulk PRÉCISE par son id (statut + url autoritaires). À utiliser
+ * côté webhook finish plutôt que `currentBulkOperation` : cette dernière renvoie l'op
+ * « courante » du shop, qui peut déjà être une nouvelle op ou être en retard de cohérence.
+ */
+export const BULK_OPERATION_BY_ID_QUERY = `query BulkOperationById($id: ID!) {
+  node(id: $id) {
+    ... on BulkOperation {
+      id
+      status
+      errorCode
+      objectCount
+      url
+    }
   }
 }`;
 
@@ -178,6 +195,17 @@ export function parseCurrentBulkOperation(
   }>;
   assertNoGraphQLErrors(response);
   return response.data?.currentBulkOperation ?? null;
+}
+
+/** Parse la réponse de `node(id:)` ciblant une BulkOperation (null si introuvable). */
+export function parseBulkOperationNode(
+  payload: unknown,
+): CurrentBulkOperation | null {
+  const response = payload as GraphQLResponse<{
+    node: CurrentBulkOperation | null;
+  }>;
+  assertNoGraphQLErrors(response);
+  return response.data?.node ?? null;
 }
 
 /** Vrai tant que l'opération n'est pas terminée (contrainte « 1 bulk query / shop »). */

@@ -29,6 +29,7 @@ function fakeClient(
     listWebhooks: () => unknown;
     createWebhook: () => unknown;
     current: () => unknown;
+    byId: () => unknown;
     run: () => unknown;
   }>,
 ): { client: AdminGraphQLClient; calls: string[] } {
@@ -60,6 +61,10 @@ function fakeClient(
         return (handlers.current?.() ?? {
           data: { currentBulkOperation: null },
         }) as T;
+      }
+      if (query.includes("BulkOperationById")) {
+        calls.push("byId");
+        return (handlers.byId?.() ?? { data: { node: null } }) as T;
       }
       if (query.includes("bulkOperationRunQuery")) {
         calls.push("run");
@@ -161,23 +166,25 @@ describe("processBulkOperationFinish", () => {
     yield text;
   }
 
-  it("streame le JSONL terminé et insère les raw_records par lots", async () => {
+  const OP_ID = "gid://shopify/BulkOperation/9";
+
+  function byIdNode(node: Record<string, unknown>) {
+    return () => ({ data: { node } });
+  }
+
+  it("récupère l'op par son id, streame le JSONL et insère les raw_records par lots", async () => {
     const jsonl = [
       '{"id":"gid://shopify/Product/1","title":"Chaise"}',
       '{"id":"gid://shopify/ProductVariant/11","__parentId":"gid://shopify/Product/1"}',
       '{"id":"gid://shopify/Product/2","title":"Table"}',
     ].join("\n");
-    const { client } = fakeClient({
-      current: () => ({
-        data: {
-          currentBulkOperation: {
-            id: "gid://shopify/BulkOperation/9",
-            status: "COMPLETED",
-            errorCode: null,
-            url: "https://storage.example/result.jsonl",
-            objectCount: "3",
-          },
-        },
+    const { client, calls } = fakeClient({
+      byId: byIdNode({
+        id: OP_ID,
+        status: "COMPLETED",
+        errorCode: null,
+        url: "https://storage.example/result.jsonl",
+        objectCount: "3",
       }),
     });
     const inserted: unknown[] = [];
@@ -185,12 +192,14 @@ describe("processBulkOperationFinish", () => {
     const result = await processBulkOperationFinish({
       client,
       connection,
+      bulkOperationId: OP_ID,
       streamText: () => chunks(jsonl),
       insert: async (records) => {
         inserted.push(...records);
       },
     });
 
+    expect(calls).toContain("byId");
     expect(result.status).toBe("COMPLETED");
     expect(result.ingested).toBe(3);
     expect(inserted).toHaveLength(3);
@@ -202,22 +211,19 @@ describe("processBulkOperationFinish", () => {
 
   it("ne télécharge rien quand l'opération n'a pas d'url (catalogue vide)", async () => {
     const { client } = fakeClient({
-      current: () => ({
-        data: {
-          currentBulkOperation: {
-            id: "gid://shopify/BulkOperation/9",
-            status: "COMPLETED",
-            errorCode: null,
-            url: null,
-            objectCount: "0",
-          },
-        },
+      byId: byIdNode({
+        id: OP_ID,
+        status: "COMPLETED",
+        errorCode: null,
+        url: null,
+        objectCount: "0",
       }),
     });
     const streamText = vi.fn();
     const result = await processBulkOperationFinish({
       client,
       connection,
+      bulkOperationId: OP_ID,
       streamText: streamText as never,
       insert: async () => {},
     });
@@ -227,21 +233,18 @@ describe("processBulkOperationFinish", () => {
 
   it("remonte un échec de bulk operation sans ingérer", async () => {
     const { client } = fakeClient({
-      current: () => ({
-        data: {
-          currentBulkOperation: {
-            id: "gid://shopify/BulkOperation/9",
-            status: "FAILED",
-            errorCode: "INTERNAL_SERVER_ERROR",
-            url: null,
-            objectCount: null,
-          },
-        },
+      byId: byIdNode({
+        id: OP_ID,
+        status: "FAILED",
+        errorCode: "INTERNAL_SERVER_ERROR",
+        url: null,
+        objectCount: null,
       }),
     });
     const result = await processBulkOperationFinish({
       client,
       connection,
+      bulkOperationId: OP_ID,
       streamText: () => chunks(""),
       insert: async () => {},
     });
@@ -250,31 +253,17 @@ describe("processBulkOperationFinish", () => {
     expect(result.errorCode).toBe("INTERNAL_SERVER_ERROR");
   });
 
-  it("n'ingère rien si l'opération courante diffère de celle annoncée (stale/race)", async () => {
-    const { client } = fakeClient({
-      current: () => ({
-        data: {
-          currentBulkOperation: {
-            id: "gid://shopify/BulkOperation/NOUVELLE",
-            status: "COMPLETED",
-            errorCode: null,
-            url: "https://storage.example/result.jsonl",
-            objectCount: "3",
-          },
-        },
-      }),
-    });
-    const streamText = vi.fn();
+  it("renvoie status `none` si l'op est introuvable (node null)", async () => {
+    const { client } = fakeClient({ byId: () => ({ data: { node: null } }) });
     const result = await processBulkOperationFinish({
       client,
       connection,
-      expectedOperationId: "gid://shopify/BulkOperation/ATTENDUE",
-      streamText: streamText as never,
+      bulkOperationId: OP_ID,
+      streamText: () => chunks(""),
       insert: async () => {},
     });
-    expect(result.status).toBe("stale");
+    expect(result.status).toBe("none");
     expect(result.ingested).toBe(0);
-    expect(streamText).not.toHaveBeenCalled();
   });
 
   it("flushe le dernier lot partiel au-delà de la taille de lot", async () => {
@@ -284,16 +273,12 @@ describe("processBulkOperationFinish", () => {
       (_unused, i) => `{"id":"gid://shopify/Product/${i}"}`,
     ).join("\n");
     const { client } = fakeClient({
-      current: () => ({
-        data: {
-          currentBulkOperation: {
-            id: "gid://shopify/BulkOperation/9",
-            status: "COMPLETED",
-            errorCode: null,
-            url: "https://storage.example/result.jsonl",
-            objectCount: String(total),
-          },
-        },
+      byId: byIdNode({
+        id: OP_ID,
+        status: "COMPLETED",
+        errorCode: null,
+        url: "https://storage.example/result.jsonl",
+        objectCount: String(total),
       }),
     });
     const batchSizes: number[] = [];
@@ -301,6 +286,7 @@ describe("processBulkOperationFinish", () => {
     const result = await processBulkOperationFinish({
       client,
       connection,
+      bulkOperationId: OP_ID,
       streamText: () => chunks(jsonl),
       insert: async (records) => {
         batchSizes.push(records.length);

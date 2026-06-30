@@ -2,7 +2,7 @@ import { after, NextResponse, type NextRequest } from "next/server";
 
 import {
   connectionAccessToken,
-  getConnectionByBulkOperation,
+  getConnectionByBulkOperationId,
 } from "@/lib/data/shopify-connections";
 import { createAdminGraphQLClient } from "@/lib/shopify/admin-graphql";
 import { shopifyConfig } from "@/lib/shopify/config";
@@ -51,11 +51,10 @@ export async function POST(req: NextRequest) {
 
   after(async () => {
     try {
-      // Corréler par l'op id annoncé (et non par domaine seul) : un même domaine peut
-      // être connecté par plusieurs orgs → résoudre par domaine seul ingérerait dans la
-      // mauvaise org (cross-tenant). L'op id a été mémorisé au lancement (ingest route).
-      const connection = await getConnectionByBulkOperation(
-        shopDomain,
+      // Corréler par l'op id (globalement unique → 1 org), mémorisé au lancement dans
+      // `shopify_bulk_operations`. Évite l'ingestion cross-tenant ET la perte d'un webhook
+      // tardif (chaque op a sa propre ligne, jamais écrasée).
+      const connection = await getConnectionByBulkOperationId(
         payload.bulkOperationId,
       );
       if (!connection) {
@@ -72,8 +71,7 @@ export async function POST(req: NextRequest) {
       const result = await processBulkOperationFinish({
         client,
         connection,
-        // Corrèle l'ingestion à l'opération annoncée par le webhook (anti-race / anti-replay).
-        expectedOperationId: payload.bulkOperationId,
+        bulkOperationId: payload.bulkOperationId,
       });
       if (result.status !== "COMPLETED") {
         console.error(

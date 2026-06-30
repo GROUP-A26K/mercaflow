@@ -79,43 +79,69 @@ export async function upsertShopifyConnection(
   }
 }
 
+/** Levée quand une org a plusieurs boutiques actives et qu'aucune n'est précisée. */
+export class AmbiguousConnectionError extends Error {
+  constructor(
+    message = "Plusieurs boutiques Shopify actives : préciser la boutique (?shop=<domaine>.myshopify.com).",
+  ) {
+    super(message);
+    this.name = "AmbiguousConnectionError";
+  }
+}
+
 /**
  * Connexion active d'une organisation (pour déclencher l'ingestion depuis la zone authentifiée).
  * Service-role : l'`orgId` provient de la session Clerk (`requireOrg`), filtré explicitement.
+ * Si `shop` est fourni, on cible cette boutique ; sinon, on exige qu'il n'y en ait qu'une
+ * (sinon `AmbiguousConnectionError` — ne pas deviner silencieusement la mauvaise boutique).
  */
 export async function getActiveConnectionForOrg(
   orgId: string,
+  shop?: string,
 ): Promise<ShopifyConnection | null> {
   const supabase = createAdminClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("shopify_connections")
     .select(CONNECTION_COLUMNS)
     .eq("org_id", orgId)
-    .eq("status", "active")
+    .eq("status", "active");
+  if (shop) query = query.eq("shop_domain", shop);
+  const { data, error } = await query
     .order("installed_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(2);
   if (error) {
     throw new Error(
       `Lecture de la connexion Shopify échouée : ${error.message}`,
     );
   }
-  return data ? mapConnection(data as ConnectionRow) : null;
+  const rows = (data ?? []) as ConnectionRow[];
+  if (rows.length === 0) return null;
+  if (!shop && rows.length > 1) throw new AmbiguousConnectionError();
+  return mapConnection(rows[0]);
+}
+
+export interface RecordBulkOperationParams {
+  bulkOperationId: string;
+  orgId: string;
+  connectionId: string;
+  shopDomain: string;
 }
 
 /**
- * Mémorise l'id de la bulk operation lancée par une connexion (pour corréler le webhook
- * `bulk_operations/finish` à la bonne org). Service-role (déclenché côté org authentifiée).
+ * Enregistre une bulk operation lancée (id d'op → connexion/org) dans `shopify_bulk_operations`.
+ * Service-role. La PK sur `bulk_operation_id` (id globalement unique) garantit une corrélation
+ * 1:1 ; les lignes ne sont jamais écrasées → un webhook tardif d'une op précédente reste résoluble.
  */
-export async function setConnectionBulkOperation(
-  connectionId: string,
-  bulkOperationId: string,
+export async function recordBulkOperation(
+  params: RecordBulkOperationParams,
 ): Promise<void> {
   const supabase = createAdminClient();
-  const { error } = await supabase
-    .from("shopify_connections")
-    .update({ last_bulk_operation_id: bulkOperationId })
-    .eq("id", connectionId);
+  const { error } = await supabase.from("shopify_bulk_operations").insert({
+    bulk_operation_id: params.bulkOperationId,
+    org_id: params.orgId,
+    connection_id: params.connectionId,
+    shop_domain: params.shopDomain,
+  });
   if (error) {
     throw new Error(
       `Suivi de la bulk operation Shopify échoué : ${error.message}`,
@@ -124,28 +150,23 @@ export async function setConnectionBulkOperation(
 }
 
 /**
- * Connexion qui a lancé une bulk operation donnée, résolue par `(shop_domain, op id)`.
- * Pour le webhook : pas de session Clerk (la boutique vient de l'en-tête `X-Shopify-Shop-Domain`,
- * l'op id du payload). Corréler par l'op id lancé — et non par domaine seul — évite d'ingérer
- * le catalogue dans la mauvaise org quand un même domaine est connecté par plusieurs orgs.
+ * Connexion qui a lancé une bulk operation, résolue par l'id d'op (globalement unique → 1 org).
+ * Pour le webhook : pas de session Clerk ; l'op id du payload identifie sans ambiguïté l'org.
  */
-export async function getConnectionByBulkOperation(
-  shopDomain: string,
+export async function getConnectionByBulkOperationId(
   bulkOperationId: string,
 ): Promise<ShopifyConnection | null> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
-    .from("shopify_connections")
-    .select(CONNECTION_COLUMNS)
-    .eq("shop_domain", shopDomain)
-    .eq("last_bulk_operation_id", bulkOperationId)
-    .eq("status", "active")
-    .limit(1)
+    .from("shopify_bulk_operations")
+    .select(`connection:shopify_connections!inner(${CONNECTION_COLUMNS})`)
+    .eq("bulk_operation_id", bulkOperationId)
     .maybeSingle();
   if (error) {
     throw new Error(
-      `Lecture de la connexion Shopify échouée : ${error.message}`,
+      `Lecture de la bulk operation Shopify échouée : ${error.message}`,
     );
   }
-  return data ? mapConnection(data as ConnectionRow) : null;
+  const connection = (data as { connection: ConnectionRow } | null)?.connection;
+  return connection ? mapConnection(connection) : null;
 }

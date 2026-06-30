@@ -5,6 +5,7 @@ vi.mock("server-only", () => ({}));
 import {
   BULK_CATALOG_QUERY,
   isBulkOperationRunning,
+  parseBulkOperationNode,
   parseBulkOperationRunResult,
   parseCurrentBulkOperation,
   parseExistingBulkFinishWebhook,
@@ -112,6 +113,28 @@ describe("parseCurrentBulkOperation", () => {
     expect(
       parseCurrentBulkOperation({ data: { currentBulkOperation: null } }),
     ).toBeNull();
+  });
+});
+
+describe("parseBulkOperationNode", () => {
+  it("renvoie l'opération ciblée par son id", () => {
+    const op = parseBulkOperationNode({
+      data: {
+        node: {
+          id: "gid://shopify/BulkOperation/9",
+          status: "COMPLETED",
+          errorCode: null,
+          url: "https://storage.example/result.jsonl",
+          objectCount: "500",
+        },
+      },
+    });
+    expect(op?.id).toBe("gid://shopify/BulkOperation/9");
+    expect(op?.url).toBe("https://storage.example/result.jsonl");
+  });
+
+  it("renvoie null si le node est introuvable", () => {
+    expect(parseBulkOperationNode({ data: { node: null } })).toBeNull();
   });
 });
 

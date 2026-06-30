@@ -12,10 +12,12 @@ import {
 import {
   BULK_CATALOG_QUERY,
   BULK_FINISH_WEBHOOKS_QUERY,
+  BULK_OPERATION_BY_ID_QUERY,
   BULK_OPERATION_RUN_MUTATION,
   CURRENT_BULK_OPERATION_QUERY,
   WEBHOOK_SUBSCRIPTION_CREATE_MUTATION,
   isBulkOperationRunning,
+  parseBulkOperationNode,
   parseBulkOperationRunResult,
   parseCurrentBulkOperation,
   parseExistingBulkFinishWebhook,
@@ -120,12 +122,8 @@ export async function startCatalogIngestion(
 export interface ProcessFinishParams {
   client: AdminGraphQLClient;
   connection: ShopifyConnection;
-  /**
-   * Id de l'opération annoncée par le webhook. Si fourni et qu'il diffère de l'opération
-   * courante côté Shopify, on n'ingère rien (statut `stale`) : une nouvelle bulk a été
-   * lancée entre-temps → éviter d'ingérer le mauvais JSONL ou de droper celui attendu.
-   */
-  expectedOperationId?: string;
+  /** Id de l'opération annoncée par le webhook : on récupère CETTE op par son id. */
+  bulkOperationId: string;
   /** Téléchargement du JSONL (injectable pour les tests). */
   streamText?: (url: string) => AsyncIterable<string>;
   /** Écriture des raw_records (injectable pour les tests). */
@@ -139,9 +137,10 @@ export interface ProcessFinishResult {
 }
 
 /**
- * Traite la fin d'une bulk operation : récupère son url, streame le JSONL et insère les
- * `raw_records` par lots (sans tout charger en RAM). Sur statut non-COMPLETED, n'ingère
- * rien et remonte le statut/erreur pour journalisation côté webhook.
+ * Traite la fin d'une bulk operation : récupère l'opération PRÉCISE (par son id, via
+ * `node(id:)` — pas `currentBulkOperation` qui pourrait pointer une autre op ou être en
+ * retard de cohérence), streame le JSONL et insère les `raw_records` par lots (sans tout
+ * charger en RAM). Sur statut non-COMPLETED, n'ingère rien et remonte le statut/erreur.
  */
 export async function processBulkOperationFinish(
   params: ProcessFinishParams,
@@ -149,27 +148,24 @@ export async function processBulkOperationFinish(
   const streamText = params.streamText ?? streamTextFromUrl;
   const insert = params.insert ?? insertRawRecords;
 
-  const current = parseCurrentBulkOperation(
-    await params.client.query(CURRENT_BULK_OPERATION_QUERY),
+  const operation = parseBulkOperationNode(
+    await params.client.query(BULK_OPERATION_BY_ID_QUERY, {
+      id: params.bulkOperationId,
+    }),
   );
-  if (!current) {
+  if (!operation) {
     return { status: "none", ingested: 0, errorCode: null };
   }
-  if (params.expectedOperationId && current.id !== params.expectedOperationId) {
-    // L'opération courante n'est pas celle annoncée par le webhook (une autre bulk a
-    // démarré entre-temps) → ne rien ingérer.
-    return { status: "stale", ingested: 0, errorCode: null };
-  }
-  if (current.status !== "COMPLETED") {
+  if (operation.status !== "COMPLETED") {
     return {
-      status: current.status,
+      status: operation.status,
       ingested: 0,
-      errorCode: current.errorCode,
+      errorCode: operation.errorCode,
     };
   }
-  if (!current.url) {
+  if (!operation.url) {
     // COMPLETED sans url = aucun objet (catalogue vide).
-    return { status: current.status, ingested: 0, errorCode: null };
+    return { status: operation.status, ingested: 0, errorCode: null };
   }
 
   let batch: RawRecordInsert[] = [];
@@ -181,7 +177,7 @@ export async function processBulkOperationFinish(
     batch = [];
   };
 
-  for await (const node of streamJsonlNodes(streamText(current.url))) {
+  for await (const node of streamJsonlNodes(streamText(operation.url))) {
     batch.push(
       toRawRecord({
         orgId: params.connection.orgId,
@@ -193,5 +189,5 @@ export async function processBulkOperationFinish(
   }
   await flush();
 
-  return { status: current.status, ingested, errorCode: null };
+  return { status: operation.status, ingested, errorCode: null };
 }
