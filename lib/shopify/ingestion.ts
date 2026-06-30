@@ -164,7 +164,15 @@ export async function processBulkOperationFinish(
     };
   }
   if (!operation.url) {
-    // COMPLETED sans url = aucun objet (catalogue vide).
+    // COMPLETED sans url : normalement = catalogue vide. MAIS Shopify peut renvoyer
+    // COMPLETED avec une url pas encore disponible alors qu'il y a des objets → ne pas
+    // confondre avec un vrai catalogue vide. Si objectCount > 0, statut `url_missing`
+    // distinct (journalisé côté webhook ; re-déclencher re-fetch tout, idempotent).
+    const count =
+      operation.objectCount != null ? Number(operation.objectCount) : 0;
+    if (Number.isFinite(count) && count > 0) {
+      return { status: "url_missing", ingested: 0, errorCode: null };
+    }
     return { status: operation.status, ingested: 0, errorCode: null };
   }
 

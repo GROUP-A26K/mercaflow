@@ -253,6 +253,29 @@ describe("processBulkOperationFinish", () => {
     expect(result.errorCode).toBe("INTERNAL_SERVER_ERROR");
   });
 
+  it("signale `url_missing` si COMPLETED sans url mais objectCount > 0 (url pas prête)", async () => {
+    const { client } = fakeClient({
+      byId: byIdNode({
+        id: OP_ID,
+        status: "COMPLETED",
+        errorCode: null,
+        url: null,
+        objectCount: "500", // catalogue non vide, mais url absente
+      }),
+    });
+    const streamText = vi.fn();
+    const result = await processBulkOperationFinish({
+      client,
+      connection,
+      bulkOperationId: OP_ID,
+      streamText: streamText as never,
+      insert: async () => {},
+    });
+    expect(result.status).toBe("url_missing");
+    expect(result.ingested).toBe(0);
+    expect(streamText).not.toHaveBeenCalled();
+  });
+
   it("signale `incomplete` si le nombre ingéré diffère d'objectCount (download tronqué)", async () => {
     const jsonl = [
       '{"id":"gid://shopify/Product/1"}',
