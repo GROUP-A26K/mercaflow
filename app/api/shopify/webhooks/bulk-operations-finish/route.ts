@@ -65,6 +65,20 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Cas TERMINAL distinct du transitoire : si la connexion a été révoquée (ou n'a plus de
+  // token) depuis le lancement de la bulk, l'ingestion est impossible — pas de token pour
+  // télécharger le JSONL. On abandonne explicitement (log + 200) plutôt que de laisser
+  // `connectionAccessToken` lever au fond du `after()`, et SANS demander un retry inutile.
+  if (connection.status !== "active" || !connection.accessTokenEnc) {
+    console.error(
+      `Webhook bulk : connexion ${connection.shopDomain} révoquée/sans token — import ${payload.bulkOperationId} abandonné`,
+    );
+    return NextResponse.json(
+      { ok: true, skipped: "connection_inactive" },
+      { status: 200 },
+    );
+  }
+
   // L'ingestion réelle (download + streaming) tourne en tâche de fond : un gros catalogue
   // dépasse le budget temps d'un webhook (~5 s côté Shopify).
   after(async () => {
