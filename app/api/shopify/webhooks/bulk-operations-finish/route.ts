@@ -8,6 +8,7 @@ import { createAdminGraphQLClient } from "@/lib/shopify/admin-graphql";
 import { shopifyConfig } from "@/lib/shopify/config";
 import { processBulkOperationFinish } from "@/lib/shopify/ingestion";
 import { normalizeConnectionCatalog } from "@/lib/shopify/normalization";
+import { runConnectionAudit } from "@/lib/shopify/audit";
 import {
   parseBulkFinishPayload,
   verifyWebhookHmac,
@@ -109,6 +110,13 @@ export async function POST(req: NextRequest) {
           `(${normalized.failed} échec(s)), couverture GTIN ` +
           `${(normalized.gtin.ratio * 100).toFixed(1)}% ` +
           `(${normalized.gtin.withGtin}/${normalized.gtin.total}).`,
+      );
+      // Catalogue normalisé → audit PUS (MER-29) : snapshot append-only des 7 scores/produit
+      // + flags d'éligibilité variant. Même tâche de fond (`after()`).
+      const audit = await runConnectionAudit(connection);
+      console.info(
+        `Audit PUS ${connection.shopDomain} : ${audit.products} produits ` +
+          `audités (${audit.failed} échec(s)).`,
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
