@@ -165,96 +165,57 @@ export interface PersistAuditParams {
   variantIdByGid: Record<string, string>;
 }
 
+/** Ligne de score transmise à la RPC (l'`audit_id` et l'`org_id` sont posés côté SQL). */
+interface ScorePayload {
+  dimension: string;
+  value: number | null;
+  evidence: Record<string, unknown>;
+}
+
+/** Éligibilité variant déjà résolue (GID → id uuid) pour la RPC. */
+interface EligibilityPayload {
+  variant_id: string;
+  issues: VariantEligibility["issues"];
+}
+
 /**
- * Persiste un snapshot d'audit pour UN produit (append-only) : 1 ligne `audits`, puis ses
- * `scores` (1/dimension) et `variant_eligibility` (1/variant) en lots. Jamais d'UPDATE.
+ * Persiste un snapshot d'audit pour UN produit (append-only) via la RPC transactionnelle
+ * `persist_product_audit` (MER-57) : `audits` + `scores` + `variant_eligibility` sont insérés
+ * dans UNE seule transaction Postgres (tout-ou-rien). Un échec à mi-chemin ⇒ rollback complet,
+ * donc jamais de snapshot partiel qui deviendrait « current » via la vue DISTINCT ON. La RPC
+ * ne fait que des INSERT → l'invariant append-only est préservé.
  */
 export async function persistProductAudit(
   params: PersistAuditParams,
 ): Promise<void> {
   const supabase = createAdminClient();
 
-  const { data: auditRow, error: auditError } = await supabase
-    .from("audits")
-    .insert({
-      org_id: params.orgId,
-      product_id: params.productId,
-      model: params.model,
-      context: params.context,
+  const scores: ScorePayload[] = params.scores.map((score) => ({
+    dimension: score.dimension,
+    value: score.value,
+    evidence: score.evidence,
+  }));
+
+  // On résout GID variant → id uuid AVANT l'appel : un variant absent du mapping est ignoré
+  // (pas de FK à insérer). La RPC reçoit une éligibilité déjà rattachée aux id canoniques.
+  const eligibility: EligibilityPayload[] = params.eligibility
+    .map((e) => {
+      const variantId = params.variantIdByGid[e.shopify_variant_id];
+      return variantId ? { variant_id: variantId, issues: e.issues } : null;
     })
-    .select("id")
-    .single();
-  if (auditError || !auditRow) {
+    .filter((row): row is EligibilityPayload => row !== null);
+
+  const { error } = await supabase.rpc("persist_product_audit", {
+    p_org_id: params.orgId,
+    p_product_id: params.productId,
+    p_model: params.model,
+    p_context: params.context,
+    p_scores: scores,
+    p_eligibility: eligibility,
+  });
+  if (error) {
     throw new Error(
-      `Insertion audit échouée (${params.productId}) : ${auditError?.message ?? "aucune ligne"}`,
+      `Persistance de l'audit échouée (${params.productId}) : ${error.message}`,
     );
-  }
-  const auditId = (auditRow as { id: string }).id;
-
-  // Pas de transaction multi-statements côté PostgREST : on compense manuellement. Si un
-  // insert ultérieur échoue, on SUPPRIME l'audit (cascade → scores + variant_eligibility) →
-  // pas de snapshot partiel qui deviendrait « current » via la vue DISTINCT ON. (Atomicité
-  // stricte via RPC/stored proc = suivi.)
-  try {
-    const scoreRows = params.scores.map((score) => ({
-      org_id: params.orgId,
-      audit_id: auditId,
-      product_id: params.productId,
-      dimension: score.dimension,
-      value: score.value,
-      evidence: score.evidence,
-    }));
-    const { error: scoresError } = await supabase
-      .from("scores")
-      .insert(scoreRows);
-    if (scoresError) {
-      throw new Error(`Insertion scores échouée : ${scoresError.message}`);
-    }
-
-    const eligibilityRows = params.eligibility
-      .map((e) => {
-        const variantId = params.variantIdByGid[e.shopify_variant_id];
-        return variantId
-          ? {
-              org_id: params.orgId,
-              audit_id: auditId,
-              variant_id: variantId,
-              issues: e.issues,
-            }
-          : null;
-      })
-      .filter((row): row is NonNullable<typeof row> => row !== null);
-    if (eligibilityRows.length > 0) {
-      const { error: eligError } = await supabase
-        .from("variant_eligibility")
-        .insert(eligibilityRows);
-      if (eligError) {
-        throw new Error(
-          `Insertion variant_eligibility échouée : ${eligError.message}`,
-        );
-      }
-    }
-  } catch (error) {
-    // Rollback best-effort : ne JAMAIS masquer l'erreur d'origine si la suppression échoue.
-    // Si le delete rate (réseau), on journalise (snapshot partiel possible) et on relance
-    // l'erreur initiale — un re-run (idempotent au sens append-only) ré-audite le produit.
-    try {
-      const { error: rollbackError } = await supabase
-        .from("audits")
-        .delete()
-        .eq("id", auditId);
-      if (rollbackError) {
-        console.error(
-          `Rollback de l'audit ${auditId} échoué (snapshot partiel possible) : ${rollbackError.message}`,
-        );
-      }
-    } catch (rollbackThrow) {
-      const message =
-        rollbackThrow instanceof Error
-          ? rollbackThrow.message
-          : String(rollbackThrow);
-      console.error(`Rollback de l'audit ${auditId} a levé : ${message}`);
-    }
-    throw error;
   }
 }
