@@ -1,0 +1,24 @@
+lib/shopify/webhook-events.ts
+  s_418a6894af41f9::t_175f1c8aeb667a 137,140,144,146-148
+  s_418a6894af41f9::t_81b2365d7883e1 38-40
+  s_418a6894af41f9::t_a1156684831603 67
+  s_418a6894af41f9::t_f1ed102d758024 36-37,41-42,48
+tests/unit/shopify-webhook-events.test.ts
+  s_418a6894af41f9::t_2c212835e32d77 98-112
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "f5706a75cbd7879241907624534fbc5671a81513",
+  "prompts": {},
+  "sessions": {
+    "s_418a6894af41f9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ea6c9e11-6196-4dca-b5cd-75422e94d2af",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
