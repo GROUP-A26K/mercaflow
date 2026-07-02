@@ -5,7 +5,11 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { SHOPIFY_REDIRECT_PATH, shopifyConfig } from "@/lib/shopify/config";
 import { encryptToken } from "@/lib/shopify/crypto";
-import { buildInstallUrl, isValidShopDomain } from "@/lib/shopify/oauth";
+import {
+  buildInstallUrl,
+  isValidShopDomain,
+  resolvePublicOrigin,
+} from "@/lib/shopify/oauth";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +34,13 @@ export async function GET(request: NextRequest) {
 
   const { orgId } = await auth();
   if (!orgId) {
-    return NextResponse.redirect(new URL("/select-organization", request.url));
+    // Redirection interne RELATIVE : le navigateur la résout contre l'origine publique
+    // qu'il a demandée (le tunnel/proxy masque l'hôte réel côté serveur). Pas d'hôte
+    // dérivé d'en-têtes → aucun risque d'open-redirect.
+    return new NextResponse(null, {
+      status: 307,
+      headers: { Location: "/select-organization" },
+    });
   }
 
   const shop = request.nextUrl.searchParams.get("shop");
@@ -42,7 +52,14 @@ export async function GET(request: NextRequest) {
   }
 
   const config = shopifyConfig();
-  const redirectUri = `${request.nextUrl.origin}${SHOPIFY_REDIRECT_PATH}`;
+  // `redirect_uri` doit être ABSOLU et matcher la whitelist Shopify → on reconstruit
+  // l'origine publique depuis les en-têtes de forwarding (`nextUrl` = socket local
+  // derrière le tunnel/proxy). La whitelist Shopify borne toute manipulation d'hôte.
+  const origin = resolvePublicOrigin(request.headers, {
+    protocol: request.nextUrl.protocol,
+    host: request.nextUrl.host,
+  });
+  const redirectUri = `${origin}${SHOPIFY_REDIRECT_PATH}`;
   const nonce = randomBytes(16).toString("hex");
 
   const response = NextResponse.redirect(

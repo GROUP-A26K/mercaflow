@@ -1,7 +1,12 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
-const nextConfig: NextConfig = {/* config options here */};
+const nextConfig: NextConfig = {
+  // Autorise les ressources de dev (HMR, chunks `/_next/*`) servies via le tunnel de
+  // dev Shopify `shopify-dev.mercaflow.ai` (MER-36, cf. docs/shopify-dev-tunnel.md).
+  // Uniquement pris en compte par `next dev` — aucun effet sur le build de prod.
+  allowedDevOrigins: ["shopify-dev.mercaflow.ai"],
+};
 
 // Sentry — câblage build-time. L'upload des source maps n'a lieu que si
 // SENTRY_AUTH_TOKEN / org / project sont fournis (CI/prod) ; sinon no-op.
