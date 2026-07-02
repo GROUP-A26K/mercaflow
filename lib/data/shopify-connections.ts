@@ -213,3 +213,24 @@ export async function getConnectionByBulkOperationId(
   const connection = (data as { connection: ConnectionRow } | null)?.connection;
   return connection ? mapConnection(connection) : null;
 }
+
+/**
+ * Connexion par son id (service-role). Utilisé par le worker d'audit durable (MER-58) : le job
+ * porte `connection_id` ; pas de session Clerk côté cron → lecture service-role.
+ */
+export async function getConnectionById(
+  id: string,
+): Promise<ShopifyConnection | null> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("shopify_connections")
+    .select(CONNECTION_COLUMNS)
+    .eq("id", id)
+    .maybeSingle();
+  if (error) {
+    throw new Error(
+      `Lecture de la connexion Shopify échouée : ${error.message}`,
+    );
+  }
+  return data ? mapConnection(data as ConnectionRow) : null;
+}

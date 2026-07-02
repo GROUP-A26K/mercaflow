@@ -1,5 +1,6 @@
 import { after, NextResponse, type NextRequest } from "next/server";
 
+import { enqueueAuditJob } from "@/lib/data/background-jobs";
 import {
   connectionAccessToken,
   getConnectionByBulkOperationId,
@@ -8,7 +9,6 @@ import { createAdminGraphQLClient } from "@/lib/shopify/admin-graphql";
 import { shopifyConfig } from "@/lib/shopify/config";
 import { processBulkOperationFinish } from "@/lib/shopify/ingestion";
 import { normalizeConnectionCatalog } from "@/lib/shopify/normalization";
-import { runConnectionAudit } from "@/lib/shopify/audit";
 import {
   parseBulkFinishPayload,
   verifyWebhookHmac,
@@ -111,12 +111,16 @@ export async function POST(req: NextRequest) {
           `${(normalized.gtin.ratio * 100).toFixed(1)}% ` +
           `(${normalized.gtin.withGtin}/${normalized.gtin.total}).`,
       );
-      // Catalogue normalisé → audit PUS (MER-29) : snapshot append-only des 7 scores/produit
-      // + flags d'éligibilité variant. Même tâche de fond (`after()`).
-      const audit = await runConnectionAudit(connection);
+      // Catalogue normalisé → on ENQUEUE un job d'audit durable (MER-58) au lieu d'auditer
+      // en ligne : sur 500–20k SKU, l'audit (1 fetch PDP/produit) dépasse la durée serverless
+      // et n'a aucun retry dans un `after()`. Le worker cron (`/api/shopify/jobs/audit`) le
+      // draine par pages, avec reprise idempotente. Enqueue idempotent (au plus 1 job actif/co).
+      await enqueueAuditJob({
+        orgId: connection.orgId,
+        connectionId: connection.id,
+      });
       console.info(
-        `Audit PUS ${connection.shopDomain} : ${audit.products} produits ` +
-          `audités (${audit.failed} échec(s)).`,
+        `Audit PUS ${connection.shopDomain} : job d'audit enqueue (worker cron).`,
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
