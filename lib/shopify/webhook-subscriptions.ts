@@ -86,6 +86,11 @@ export function parseSubscribedTopics(
   return subscribed;
 }
 
+// Un abonnement déjà présent (course entre deux ingestions concurrentes) n'est PAS une
+// erreur : l'objectif idempotent est atteint. On tolère ces userErrors de doublon.
+const DUPLICATE_TOPIC_ERROR =
+  /already been taken|already taken|already exists/i;
+
 /** Valide la réponse d'un `webhookSubscriptionCreate` (erreurs GraphQL + userErrors). */
 export function parseWebhookCreateResult(payload: unknown): void {
   const response = payload as GraphQLResponse<{
@@ -95,10 +100,22 @@ export function parseWebhookCreateResult(payload: unknown): void {
     };
   }>;
   assertNoGraphQLErrors(response);
-  const userErrors = response.data?.webhookSubscriptionCreate?.userErrors ?? [];
-  if (userErrors.length > 0) {
+  const result = response.data?.webhookSubscriptionCreate;
+  const userErrors = result?.userErrors ?? [];
+  // Course de doublon → succès idempotent (l'abonnement existe déjà) ; on ne lève que sur
+  // les VRAIES erreurs de création.
+  const realErrors = userErrors.filter(
+    (error) => !DUPLICATE_TOPIC_ERROR.test(error.message),
+  );
+  if (realErrors.length > 0) {
     throw new Error(
-      `Abonnement webhook rejeté : ${userErrors.map((e) => e.message).join("; ")}`,
+      `Abonnement webhook rejeté : ${realErrors.map((e) => e.message).join("; ")}`,
+    );
+  }
+  // Garde-fou : ni erreur ni abonnement créé = faux succès silencieux (webhook manquant).
+  if (userErrors.length === 0 && !result?.webhookSubscription?.id) {
+    throw new Error(
+      "Abonnement webhook : réponse sans subscription id ni userError",
     );
   }
 }

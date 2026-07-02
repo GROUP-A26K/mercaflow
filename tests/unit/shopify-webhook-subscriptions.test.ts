@@ -65,17 +65,48 @@ describe("parseWebhookCreateResult", () => {
     ).not.toThrow();
   });
 
-  it("lève sur un userError", () => {
+  it("lève sur un vrai userError de création", () => {
     expect(() =>
       parseWebhookCreateResult({
         data: {
           webhookSubscriptionCreate: {
             webhookSubscription: null,
-            userErrors: [{ field: ["topic"], message: "already taken" }],
+            userErrors: [{ field: ["callbackUrl"], message: "is invalid" }],
           },
         },
       }),
-    ).toThrow(/already taken/);
+    ).toThrow(/is invalid/);
+  });
+
+  it("tolère un doublon (course concurrente) comme succès idempotent", () => {
+    expect(() =>
+      parseWebhookCreateResult({
+        data: {
+          webhookSubscriptionCreate: {
+            webhookSubscription: null,
+            userErrors: [
+              {
+                field: ["topic"],
+                message: "Address for this topic has already been taken",
+              },
+            ],
+          },
+        },
+      }),
+    ).not.toThrow();
+  });
+
+  it("lève sur un faux succès (ni id ni userError)", () => {
+    expect(() =>
+      parseWebhookCreateResult({
+        data: {
+          webhookSubscriptionCreate: {
+            webhookSubscription: null,
+            userErrors: [],
+          },
+        },
+      }),
+    ).toThrow(/sans subscription id/);
   });
 
   it("lève sur une erreur GraphQL de haut niveau", () => {

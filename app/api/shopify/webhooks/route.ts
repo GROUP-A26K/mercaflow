@@ -9,6 +9,7 @@ import { shopifyConfig } from "@/lib/shopify/config";
 import {
   classifyWebhookTopic,
   toRawRecordFromWebhook,
+  UnmappableWebhookPayloadError,
 } from "@/lib/shopify/webhook-events";
 import { verifyWebhookHmac } from "@/lib/shopify/webhooks";
 
@@ -94,10 +95,12 @@ export async function POST(req: NextRequest) {
       }),
     );
   } catch (error) {
-    // Payload sans identifiant exploitable : ne pas demander de retry (il échouerait à
-    // l'identique). On journalise et on acquitte.
-    const message = error instanceof Error ? error.message : String(error);
-    console.error(`Webhook ${topic} (${shopDomain}) non mappable : ${message}`);
+    // On n'acquitte QUE le payload non mappable (retry inutile : il échouerait à
+    // l'identique). Toute autre erreur remonte → 500 → Shopify retente, échec visible.
+    if (!(error instanceof UnmappableWebhookPayloadError)) throw error;
+    console.error(
+      `Webhook ${topic} (${shopDomain}) non mappable : ${error.message}`,
+    );
     return NextResponse.json(
       { ok: true, skipped: "unmappable_payload" },
       { status: 200 },

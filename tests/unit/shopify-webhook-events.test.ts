@@ -5,6 +5,7 @@ vi.mock("server-only", () => ({}));
 import {
   classifyWebhookTopic,
   toRawRecordFromWebhook,
+  UnmappableWebhookPayloadError,
 } from "@/lib/shopify/webhook-events";
 
 describe("classifyWebhookTopic", () => {
@@ -78,8 +79,9 @@ describe("toRawRecordFromWebhook", () => {
       payload: { inventory_item_id: 111, location_id: 222, available: 5 },
     });
     expect(record.resource_type).toBe("inventory_level");
+    // GID canonique Shopify : location_id dans le chemin, inventory_item_id en query.
     expect(record.external_id).toBe(
-      "gid://shopify/InventoryLevel/111?location_id=222",
+      "gid://shopify/InventoryLevel/222?inventory_item_id=111",
     );
   });
 
@@ -138,13 +140,13 @@ describe("toRawRecordFromWebhook", () => {
     ).toThrow();
   });
 
-  it("lève si le produit n'a aucun identifiant", () => {
+  it("lève UnmappableWebhookPayloadError si le produit n'a aucun identifiant", () => {
     expect(() =>
       toRawRecordFromWebhook({
         ...base,
         topic: "products/update",
         payload: { title: "sans id" },
       }),
-    ).toThrow();
+    ).toThrow(UnmappableWebhookPayloadError);
   });
 });

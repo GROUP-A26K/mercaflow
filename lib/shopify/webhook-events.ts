@@ -16,6 +16,18 @@ export type WebhookAction =
 
 type WebhookPayload = Record<string, unknown>;
 
+/**
+ * Payload de webhook dont on ne peut extraire aucun identifiant exploitable. Distincte des
+ * erreurs inattendues : le routeur l'acquitte (200) sans demander de retry (il échouerait à
+ * l'identique), là où toute AUTRE erreur doit remonter (500 → Shopify retente, échec visible).
+ */
+export class UnmappableWebhookPayloadError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UnmappableWebhookPayloadError";
+  }
+}
+
 interface IngestTopic {
   resourceType: string;
   externalId: (payload: WebhookPayload) => string;
@@ -29,15 +41,16 @@ function productGid(payload: WebhookPayload): string {
   if (typeof id === "number" || typeof id === "string") {
     return `gid://shopify/Product/${id}`;
   }
-  throw new Error(
+  throw new UnmappableWebhookPayloadError(
     "Webhook produit sans identifiant (id / admin_graphql_api_id)",
   );
 }
 
 /**
- * Clé stable d'un niveau d'inventaire. Le GID `InventoryLevel` est composite (item +
- * location) : on privilégie `admin_graphql_api_id`, sinon on compose une clé déterministe
- * pour que la déduplication (external_id + content_hash) reste correcte.
+ * Clé stable d'un niveau d'inventaire. On privilégie `admin_graphql_api_id` ; à défaut on
+ * compose le GID `InventoryLevel` canonique de Shopify — `location_id` dans le chemin,
+ * `inventory_item_id` en query — pour que le fallback COÏNCIDE avec le GID réel et ne crée
+ * pas un second external_id qui contournerait la dédup / les jointures de normalisation.
  */
 function inventoryLevelKey(payload: WebhookPayload): string {
   const gid = payload.admin_graphql_api_id;
@@ -47,9 +60,9 @@ function inventoryLevelKey(payload: WebhookPayload): string {
   const scalar = (v: unknown): v is number | string =>
     typeof v === "number" || typeof v === "string";
   if (scalar(item) && scalar(location)) {
-    return `gid://shopify/InventoryLevel/${item}?location_id=${location}`;
+    return `gid://shopify/InventoryLevel/${location}?inventory_item_id=${item}`;
   }
-  throw new Error(
+  throw new UnmappableWebhookPayloadError(
     "Webhook inventory_levels/update sans clé (inventory_item_id / location_id)",
   );
 }

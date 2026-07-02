@@ -69,8 +69,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const callbackUrl = `${base}${BULK_FINISH_WEBHOOK_PATH}`;
-  const incrementalCallbackUrl = `${base}${INCREMENTAL_WEBHOOK_PATH}`;
+  // `new URL(path, base)` normalise (pas de `//` si `base` a un slash final) → l'URL de
+  // callback reste identique octet pour octet aux abonnements stockés (dédup idempotente).
+  const callbackUrl = new URL(BULK_FINISH_WEBHOOK_PATH, base).toString();
+  const incrementalCallbackUrl = new URL(
+    INCREMENTAL_WEBHOOK_PATH,
+    base,
+  ).toString();
 
   try {
     // Dans le try : `connectionAccessToken` lève si le token est révoqué/malformé

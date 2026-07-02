@@ -102,18 +102,22 @@ export async function startCatalogIngestion(
   params: StartIngestionParams,
 ): Promise<BulkOperationRef> {
   await ensureBulkFinishWebhook(params.client, params.callbackUrl);
-  if (params.incrementalCallbackUrl) {
-    await ensureIncrementalWebhooks(
-      params.client,
-      params.incrementalCallbackUrl,
-    );
-  }
 
   const current = parseCurrentBulkOperation(
     await params.client.query(CURRENT_BULK_OPERATION_QUERY),
   );
   if (current && isBulkOperationRunning(current.status)) {
     throw new BulkAlreadyRunningError();
+  }
+
+  // APRÈS le pré-check « 1 bulk / shop » : sinon un échec d'abonnement incrémental sur le
+  // chemin « bulk déjà en cours » masquerait le BulkAlreadyRunningError (→ 409) attendu, et
+  // ferait des appels Shopify inutiles à chaque retry.
+  if (params.incrementalCallbackUrl) {
+    await ensureIncrementalWebhooks(
+      params.client,
+      params.incrementalCallbackUrl,
+    );
   }
 
   try {
