@@ -1,0 +1,20 @@
+lib/shopify/audit-jobs.ts
+  s_9bc3a96a9ba461::t_a5a1f399082d8b 95-101,111-117
+  s_9bc3a96a9ba461::t_7a4b153ccca5bd 85-87,89-94,102-110,118-121
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "3e2f3c318d641a352ead7b3e779f2cdca9a30542",
+  "prompts": {},
+  "sessions": {
+    "s_9bc3a96a9ba461": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "374fbf86-6e92-4d30-b3b4-bf8b20ece4d5",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
