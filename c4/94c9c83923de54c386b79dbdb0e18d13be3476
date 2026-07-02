@@ -1,0 +1,33 @@
+lib/shopify/ingestion.ts
+  s_418a6894af41f9::t_adfd87fde9e983 81-86,88
+  s_418a6894af41f9::t_ef01510a81873a 28-31
+app/api/shopify/webhooks/route.ts
+  s_418a6894af41f9::t_c701e428fd8a24 11
+  s_418a6894af41f9::t_8a02ddc757c18b 51,67-80
+  s_418a6894af41f9::t_85a2ab697b8fa2 81-82
+lib/shopify/webhook-subscriptions.ts
+  s_418a6894af41f9::t_1ec3a308bfc5e6 89-90,94-97
+  s_418a6894af41f9::t_260676574f67da 98
+lib/shopify/webhook-events.ts
+  s_418a6894af41f9::t_62f45d8a3fd6e3 86-97
+  s_418a6894af41f9::t_690f7ffbdb14a4 85
+tests/unit/shopify-webhook-events.test.ts
+  s_418a6894af41f9::t_0d5ad46b8ef1dc 44-59
+  s_418a6894af41f9::t_2e76d0ebfdf24a 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "c494c9c83923de54c386b79dbdb0e18d13be3476",
+  "prompts": {},
+  "sessions": {
+    "s_418a6894af41f9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ea6c9e11-6196-4dca-b5cd-75422e94d2af",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
