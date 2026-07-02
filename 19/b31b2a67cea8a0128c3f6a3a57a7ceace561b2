@@ -1,0 +1,44 @@
+lib/data/shopify-connections.ts
+  s_737e965eb423ea::t_e7119c47155397 124-146
+  s_418a6894af41f9::t_ae05bc82302be4 123
+tests/unit/shopify-connections-list.test.ts
+  s_737e965eb423ea::t_5179c29ea515f1 1-46,51-72
+  s_737e965eb423ea::t_6f29ae256075d3 47-50
+tests/unit/ingest-button.test.tsx
+  s_737e965eb423ea::t_6f29ae256075d3 22-24,29
+  s_737e965eb423ea::t_760d7c6fdf9e9a 1-21,25-28,30-77
+app/(app)/dashboard/page.tsx
+  s_737e965eb423ea::t_c165fb2e87f2de 2-3,8
+  s_737e965eb423ea::t_761af541cb1eb1 52
+  s_737e965eb423ea::t_426bdf414f4172 25-31
+app/(app)/dashboard/_components/ingest-button.tsx
+  s_737e965eb423ea::t_8fca4f58d011cb 1-101
+app/(app)/dashboard/_components/ingest-catalog-card.tsx
+  s_737e965eb423ea::t_b383cc4816967a 1-46
+tests/unit/ingest-catalog-card.test.tsx
+  s_737e965eb423ea::t_ea74a278ca18ef 1-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "19b31b2a67cea8a0128c3f6a3a57a7ceace561b2",
+  "prompts": {},
+  "sessions": {
+    "s_418a6894af41f9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ea6c9e11-6196-4dca-b5cd-75422e94d2af",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    },
+    "s_737e965eb423ea": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e2caeffa-1243-4512-920e-7037778a9b86",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
