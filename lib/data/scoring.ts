@@ -119,7 +119,7 @@ async function readProductAttributes(
   if (productIds.length === 0) return byProduct;
   for (let from = 0; from < productIds.length; from += ATTR_OWNER_BATCH) {
     const slice = productIds.slice(from, from + ATTR_OWNER_BATCH);
-    // Pagination INTERNE : un lot de 500 produits peut porter > 1000 attributs → sans `range`,
+    // Pagination INTERNE : un lot de 100 produits peut porter > 1000 attributs → sans `range`,
     // PostgREST tronque silencieusement (specs/intent calculés sur un set incomplet).
     for (let offset = 0; ; offset += ATTRIBUTES_PAGE_SIZE) {
       const { data, error } = await supabase

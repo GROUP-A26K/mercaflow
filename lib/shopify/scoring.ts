@@ -95,6 +95,9 @@ function hasGtin(variant: ScoringVariant): boolean {
  * deux champs null) n'est PAS confirmée → ne compte pas comme « clean » (ne pas surévaluer).
  */
 function isConfirmedAvailable(variant: ScoringVariant): boolean {
+  // Symétrique de `isUnavailable` : `unavailable` explicite OU stock connu ≤ 0 → jamais
+  // confirmé (pas de désaccord avec variantEligibility). Sinon `available` ou stock > 0.
+  if (variant.availability === "unavailable") return false;
   if (variant.inventory_qty != null && variant.inventory_qty <= 0) return false;
   if (variant.availability === "available") return true;
   return variant.inventory_qty != null && variant.inventory_qty > 0;
