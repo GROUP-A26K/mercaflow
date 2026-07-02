@@ -7,6 +7,7 @@ import {
 import { createAdminGraphQLClient } from "@/lib/shopify/admin-graphql";
 import { shopifyConfig } from "@/lib/shopify/config";
 import { processBulkOperationFinish } from "@/lib/shopify/ingestion";
+import { normalizeConnectionCatalog } from "@/lib/shopify/normalization";
 import {
   parseBulkFinishPayload,
   verifyWebhookHmac,
@@ -98,7 +99,16 @@ export async function POST(req: NextRequest) {
           `Bulk ${payload.bulkOperationId} non ingérée : ${result.status}` +
             (result.errorCode ? ` (${result.errorCode})` : ""),
         );
+        return;
       }
+      // Ingestion réussie → normalisation (MER-28) : raw_records → products/variants/attributes
+      // + signal de couverture GTIN. Même tâche de fond (`after()`) que l'ingestion.
+      const normalized = await normalizeConnectionCatalog(connection);
+      console.info(
+        `Normalisation ${connection.shopDomain} : ${normalized.products} produits, ` +
+          `couverture GTIN ${(normalized.gtin.ratio * 100).toFixed(1)}% ` +
+          `(${normalized.gtin.withGtin}/${normalized.gtin.total}).`,
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error(
