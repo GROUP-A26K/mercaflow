@@ -1,0 +1,23 @@
+lib/data/catalog.ts
+  s_418a6894af41f9::t_9cc207b875e9db 29,31-32,34
+  s_418a6894af41f9::t_d16cd7a8f51cf0 117-124
+  s_418a6894af41f9::t_65722e55301758 169-170
+supabase/migrations/0004_attributes_unique.sql
+  s_418a6894af41f9::t_8df292f6ad5807 7-11,18-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "3e8ee14612e5ab3b86b7a06f72826078efc31f8d",
+  "prompts": {},
+  "sessions": {
+    "s_418a6894af41f9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ea6c9e11-6196-4dca-b5cd-75422e94d2af",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
