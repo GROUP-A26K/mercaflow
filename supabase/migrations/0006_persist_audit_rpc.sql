@@ -31,6 +31,19 @@ as $$
 declare
   v_audit_id uuid;
 begin
+  -- Intégrité tenant à la FRONTIÈRE DB (defense-in-depth) : la RPC écrit `p_org_id` fourni par
+  -- l'appelant ; on refuse un couple (org_id, product_id) incohérent pour qu'aucune ligne
+  -- cross-tenant ne puisse être créée, même si un appelant service-role passe un org erroné.
+  if not exists (
+    select 1 from public.products
+    where id = p_product_id and org_id = p_org_id
+  ) then
+    raise exception
+      'persist_product_audit : le produit % n''appartient pas à l''org %',
+      p_product_id, p_org_id
+      using errcode = 'check_violation';
+  end if;
+
   insert into public.audits (org_id, product_id, model, context)
   values (p_org_id, p_product_id, p_model, p_context)
   returning id into v_audit_id;
