@@ -1,0 +1,34 @@
+lib/data/scoring.ts
+  s_418a6894af41f9::t_391f7cd157e7bb 15-16
+  s_418a6894af41f9::t_b32387b9769265 189-207,209-230,232-234
+  s_418a6894af41f9::t_3baab99728d516 117-147
+tests/unit/shopify-scoring.test.ts
+  s_418a6894af41f9::t_e94bbee0bad5bd 104-123
+lib/shopify/scoring.ts
+  s_418a6894af41f9::t_2e538c1ce9dd53 91-100
+  s_418a6894af41f9::t_1ba0ddefd3e95f 188-194,202-203
+  s_418a6894af41f9::t_bfcfb96baad5f3 263
+tests/unit/shopify-discoverability.test.ts
+  s_418a6894af41f9::t_d66f4d06e540ab 28-32
+tests/unit/scoring-dal.test.ts
+  s_418a6894af41f9::t_3def5e031f9e13 29-30
+lib/shopify/discoverability.ts
+  s_418a6894af41f9::t_c43711254a884f 30-34,39-50
+  s_418a6894af41f9::t_7c2945f05be8a4 35-37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "e4facb22c6476a49863d9cd992c26c1d91522f33",
+  "prompts": {},
+  "sessions": {
+    "s_418a6894af41f9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ea6c9e11-6196-4dca-b5cd-75422e94d2af",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
