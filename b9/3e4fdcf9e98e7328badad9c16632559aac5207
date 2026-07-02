@@ -1,0 +1,27 @@
+lib/shopify/oauth.ts
+  s_2e75dfd316466f::t_a1de19a1fa888c 20-25,31-33,35-36,38-40
+app/api/shopify/callback/route.ts
+  s_2e75dfd316466f::t_c4e3768f3ef609 89-93
+docs/shopify-dev-tunnel.md
+  s_2e75dfd316466f::t_9fb81ccd029875 15-20
+app/api/shopify/install/route.ts
+  s_2e75dfd316466f::t_af765c20d62609 37-43,55-61
+tests/unit/shopify-oauth.test.ts
+  s_2e75dfd316466f::t_d856b0fb39fc77 48-57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "b93e4fdcf9e98e7328badad9c16632559aac5207",
+  "prompts": {},
+  "sessions": {
+    "s_2e75dfd316466f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "070b5f71-28b9-48b5-9815-3f60ccaf96a1",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
