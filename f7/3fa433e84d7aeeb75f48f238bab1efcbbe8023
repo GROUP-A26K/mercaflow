@@ -1,0 +1,65 @@
+vercel.json
+  s_9bc3a96a9ba461::t_d987367c3750fe 1-9
+lib/data/background-jobs.ts
+  s_9bc3a96a9ba461::t_3be88462424ac9 98-125,127-129
+  s_9bc3a96a9ba461::t_32b66659427f52 1-13,15-97,126,130-194
+  s_9bc3a96a9ba461::t_9b1a6dac813425 14
+app/api/shopify/webhooks/bulk-operations-finish/route.ts
+  s_9bc3a96a9ba461::t_1ce39941d5a51c 3
+  s_9bc3a96a9ba461::t_248172c0d630e5 114-121,123
+proxy.ts
+  s_9bc3a96a9ba461::t_4ab9d66cb8958e 14-16
+lib/shopify/audit.ts
+  s_9bc3a96a9ba461::t_32d84525be930f 6-7,18-19,26,30-31,43-45,47-50,60,70,86-135
+app/api/shopify/jobs/audit/route.ts
+  s_9bc3a96a9ba461::t_4548dfa1984100 1-37
+tests/unit/background-jobs.test.ts
+  s_9bc3a96a9ba461::t_f52bc889fd8f63 63
+  s_9bc3a96a9ba461::t_4ac1cf3fa660f3 1-62,64-179,201-227
+  s_9bc3a96a9ba461::t_9b689c25b9150c 180-200
+tests/unit/background-jobs-schema.test.ts
+  s_9bc3a96a9ba461::t_29d656a77d287f 1-32,36-39,41-56
+  s_9bc3a96a9ba461::t_9b1a6dac813425 33-35,40
+tests/unit/scoring-dal.test.ts
+  s_9bc3a96a9ba461::t_30b5533fde49c2 55,59-70
+  s_9bc3a96a9ba461::t_c5c31cc150d6eb 186-231
+  s_9bc3a96a9ba461::t_c43dbac68d3181 26-27
+  s_9bc3a96a9ba461::t_81422b11d22ee1 71
+tests/unit/shopify-audit.test.ts
+  s_9bc3a96a9ba461::t_c12fbb1fada8bb 152-215
+  s_9bc3a96a9ba461::t_74a2efe3d7b896 66
+  s_9bc3a96a9ba461::t_8398b7a0ded258 10,12,19,26
+lib/data/scoring.ts
+  s_9bc3a96a9ba461::t_3fe943fa81f477 52-87,90-92,102,121-168
+MEMORY.md
+  s_9bc3a96a9ba461::t_fa0d185ad3b614 49
+  s_9bc3a96a9ba461::t_30f15a48d305fc 135
+  s_9bc3a96a9ba461::t_f9903cd1ed94bf 136
+  s_9bc3a96a9ba461::t_b5eaf35ae3f696 152-153
+lib/data/shopify-connections.ts
+  s_9bc3a96a9ba461::t_bd6eac4ab2ea63 216-230,234-236
+  s_9bc3a96a9ba461::t_9b1a6dac813425 231-233
+lib/shopify/audit-jobs.ts
+  s_9bc3a96a9ba461::t_a31a0a6ad79122 1-107,115-136
+  s_9bc3a96a9ba461::t_9b1a6dac813425 108-114
+supabase/migrations/0007_background_jobs.sql
+  s_9bc3a96a9ba461::t_ce09e2f7c8e7cf 1-106
+tests/unit/audit-jobs.test.ts
+  s_9bc3a96a9ba461::t_d8afc643d1c744 1-203
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "f73fa433e84d7aeeb75f48f238bab1efcbbe8023",
+  "prompts": {},
+  "sessions": {
+    "s_9bc3a96a9ba461": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "374fbf86-6e92-4d30-b3b4-bf8b20ece4d5",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
