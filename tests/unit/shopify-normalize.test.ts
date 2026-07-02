@@ -204,9 +204,11 @@ describe("normalizeRawRecords", () => {
     expect(product.product.title).toBe("Sneaker");
   });
 
-  it("préfère un webhook plus récent au bulk pour le même GID produit", () => {
+  it("fusionne un webhook plus récent sans écraser les champs bulk par null", () => {
     const rows = [
-      row("gid://shopify/Product/1", "product", bulkNodes[0], "2026-07-01"),
+      ...bulkNodes.map((n) =>
+        row(n.id, resourceTypeFor(n.id), n, "2026-07-01T00:00:00Z"),
+      ),
       row(
         "gid://shopify/Product/1",
         "product",
@@ -215,11 +217,18 @@ describe("normalizeRawRecords", () => {
           title: "Frais (webhook)",
           variants: [],
         },
-        "2026-07-02",
+        "2026-07-02T00:00:00Z",
       ),
     ];
     const [product] = normalizeRawRecords(rows, ctx);
+    // Le titre plus récent (webhook) gagne...
     expect(product.product.title).toBe("Frais (webhook)");
+    // ...mais pdp_url (absent du webhook) reste celui du bulk (pas écrasé par null).
+    expect(product.product.pdp_url).toBe(
+      "https://shop.example.com/products/sneaker",
+    );
+    // ...et les variants du bulk ne sont pas perdus (webhook sans variants).
+    expect(product.variants).toHaveLength(2);
   });
 
   it("ignore les lignes inventory_level (pas de mapping produit en V1)", () => {

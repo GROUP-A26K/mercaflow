@@ -105,8 +105,9 @@ export async function POST(req: NextRequest) {
       // + signal de couverture GTIN. Même tâche de fond (`after()`) que l'ingestion.
       const normalized = await normalizeConnectionCatalog(connection);
       console.info(
-        `Normalisation ${connection.shopDomain} : ${normalized.products} produits, ` +
-          `couverture GTIN ${(normalized.gtin.ratio * 100).toFixed(1)}% ` +
+        `Normalisation ${connection.shopDomain} : ${normalized.products} produits ` +
+          `(${normalized.failed} échec(s)), couverture GTIN ` +
+          `${(normalized.gtin.ratio * 100).toFixed(1)}% ` +
           `(${normalized.gtin.withGtin}/${normalized.gtin.total}).`,
       );
     } catch (error) {

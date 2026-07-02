@@ -78,11 +78,13 @@ export async function upsertNormalizedProduct(
     }),
   );
 
-  for (const variant of normalized.variants) {
-    const { data: variantRow, error: variantError } = await supabase
+  // Upsert des variants en UN SEUL appel (évite le N+1 et réduit la surface d'écriture
+  // partielle). On récupère les ids par `shopify_variant_id` pour rattacher les attributs.
+  if (normalized.variants.length > 0) {
+    const { data: variantRows, error: variantError } = await supabase
       .from("variants")
       .upsert(
-        {
+        normalized.variants.map((variant) => ({
           org_id: orgId,
           product_id: productId,
           shopify_variant_id: variant.shopify_variant_id,
@@ -93,27 +95,34 @@ export async function upsertNormalizedProduct(
           inventory_qty: variant.inventory_qty,
           availability: variant.availability,
           position: variant.position,
-        },
+        })),
         { onConflict: "product_id,shopify_variant_id" },
       )
-      .select("id")
-      .single();
-    if (variantError || !variantRow) {
+      .select("id, shopify_variant_id");
+    if (variantError || !variantRows) {
       throw new Error(
-        `Upsert variant échoué (${variant.shopify_variant_id}) : ${variantError?.message ?? "aucune ligne"}`,
+        `Upsert variants échoué (${normalized.product.shopify_product_id}) : ${variantError?.message ?? "aucune ligne"}`,
       );
     }
-    const variantId = (variantRow as { id: string }).id;
-    for (const attr of variant.attributes) {
-      attributeRows.push({
-        org_id: orgId,
-        owner_type: "variant",
-        owner_id: variantId,
-        namespace: attr.namespace,
-        key: attr.key,
-        value: attr.value,
-        value_type: attr.value_type,
-      });
+    const idByVariantGid = new Map(
+      (variantRows as { id: string; shopify_variant_id: string }[]).map(
+        (row) => [row.shopify_variant_id, row.id],
+      ),
+    );
+    for (const variant of normalized.variants) {
+      const variantId = idByVariantGid.get(variant.shopify_variant_id);
+      if (!variantId) continue;
+      for (const attr of variant.attributes) {
+        attributeRows.push({
+          org_id: orgId,
+          owner_type: "variant",
+          owner_id: variantId,
+          namespace: attr.namespace,
+          key: attr.key,
+          value: attr.value,
+          value_type: attr.value_type,
+        });
+      }
     }
   }
 
@@ -147,7 +156,9 @@ export async function getGtinCoverageForConnection(
     .from("variants")
     .select("id, products!inner(connection_id)", { count: "exact", head: true })
     .eq("products.connection_id", connectionId)
-    .not("gtin", "is", null);
+    // Cohérent avec `gtinCoverage` (pur) : un GTIN présent = non-null ET non-vide.
+    .not("gtin", "is", null)
+    .neq("gtin", "");
 
   const [totalRes, withGtinRes] = await Promise.all([
     totalQuery,

@@ -17,12 +17,15 @@ import {
 
 export interface NormalizeCatalogResult {
   products: number;
+  failed: number;
   gtin: GtinCoverage;
 }
 
 /**
  * Normalise tout le catalogue d'une connexion : `raw_records` → products / variants /
  * attributes, puis calcule la couverture GTIN (signal d'audit). Idempotent (upserts).
+ * Isolation par produit : l'échec d'un produit est journalisé et n'empêche PAS les suivants
+ * (un re-run, idempotent, réparera les échecs transitoires).
  */
 export async function normalizeConnectionCatalog(
   connection: ShopifyConnection,
@@ -33,10 +36,19 @@ export async function normalizeConnectionCatalog(
     connectionId: connection.id,
   });
 
+  let failed = 0;
   for (const product of products) {
-    await upsertNormalizedProduct(product);
+    try {
+      await upsertNormalizedProduct(product);
+    } catch (error) {
+      failed += 1;
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(
+        `Normalisation du produit ${product.product.shopify_product_id} échouée : ${message}`,
+      );
+    }
   }
 
   const gtin = await getGtinCoverageForConnection(connection.id);
-  return { products: products.length, gtin };
+  return { products: products.length, failed, gtin };
 }
