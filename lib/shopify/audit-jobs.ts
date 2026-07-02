@@ -78,44 +78,47 @@ export async function drainAuditJobs(
   // optimiste). Si un autre worker re-réclame (lease périmé → attempts++), nos écritures matchent
   // 0 ligne → `LostLeaseError` → arrêt propre sans corrompre le curseur/statut du job.
   const expectedAttempts = claimed.attempts;
-
-  if (!claimed.connectionId) {
-    await failJob({
-      id: claimed.id,
-      expectedAttempts,
-      error: "job d'audit sans connection_id",
-    });
-    return {
-      claimed: true,
-      jobId: claimed.id,
-      processed: claimed.processed,
-      failed: claimed.failed,
-      done: false,
-    };
-  }
-
-  const connection = await getConnectionById(claimed.connectionId);
-  if (!connection || connection.status !== "active") {
-    await failJob({
-      id: claimed.id,
-      expectedAttempts,
-      error: `connexion ${claimed.connectionId} introuvable ou inactive`,
-    });
-    return {
-      claimed: true,
-      jobId: claimed.id,
-      processed: claimed.processed,
-      failed: claimed.failed,
-      done: false,
-    };
-  }
-
   let cursor = claimed.cursor;
   let processed = claimed.processed;
   let failed = claimed.failed;
-  const start = now();
 
+  // Un seul try/catch couvre TOUTES les mutations (y compris les `failJob` des cas terminaux) :
+  // si le job a été repris entre-temps, un `LostLeaseError` sur n'importe quel appel doit se
+  // traduire par un arrêt propre, jamais par une 500 bruyante côté route.
   try {
+    if (!claimed.connectionId) {
+      await failJob({
+        id: claimed.id,
+        expectedAttempts,
+        error: "job d'audit sans connection_id",
+      });
+      return {
+        claimed: true,
+        jobId: claimed.id,
+        processed,
+        failed,
+        done: false,
+      };
+    }
+
+    const connection = await getConnectionById(claimed.connectionId);
+    if (!connection || connection.status !== "active") {
+      await failJob({
+        id: claimed.id,
+        expectedAttempts,
+        error: `connexion ${claimed.connectionId} introuvable ou inactive`,
+      });
+      return {
+        claimed: true,
+        jobId: claimed.id,
+        processed,
+        failed,
+        done: false,
+      };
+    }
+
+    const start = now();
+
     for (;;) {
       const batch = await runAuditBatch(connection, {
         afterCursor: cursor,
