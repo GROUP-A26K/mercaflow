@@ -91,8 +91,18 @@ export function parseSubscribedTopics(
 const DUPLICATE_TOPIC_ERROR =
   /already been taken|already taken|already exists/i;
 
-/** Valide la réponse d'un `webhookSubscriptionCreate` (erreurs GraphQL + userErrors). */
-export function parseWebhookCreateResult(payload: unknown): void {
+/** Issue d'une tentative de création : abonnement créé, ou doublon toléré (existe déjà). */
+export type WebhookCreateOutcome = "created" | "duplicate";
+
+/**
+ * Valide la réponse d'un `webhookSubscriptionCreate`. Lève sur une vraie erreur (GraphQL ou
+ * userError non-doublon) ou un faux succès silencieux. Renvoie `"duplicate"` si Shopify a
+ * répondu « already taken » : l'appelant peut alors avertir (un doublon signifie que le topic
+ * existe sur la boutique mais PAS à notre callbackUrl → il pointe une autre URL).
+ */
+export function parseWebhookCreateResult(
+  payload: unknown,
+): WebhookCreateOutcome {
   const response = payload as GraphQLResponse<{
     webhookSubscriptionCreate: {
       webhookSubscription: { id: string } | null;
@@ -102,8 +112,7 @@ export function parseWebhookCreateResult(payload: unknown): void {
   assertNoGraphQLErrors(response);
   const result = response.data?.webhookSubscriptionCreate;
   const userErrors = result?.userErrors ?? [];
-  // Course de doublon → succès idempotent (l'abonnement existe déjà) ; on ne lève que sur
-  // les VRAIES erreurs de création.
+  // On ne lève que sur les VRAIES erreurs de création (les doublons sont tolérés).
   const realErrors = userErrors.filter(
     (error) => !DUPLICATE_TOPIC_ERROR.test(error.message),
   );
@@ -112,12 +121,15 @@ export function parseWebhookCreateResult(payload: unknown): void {
       `Abonnement webhook rejeté : ${realErrors.map((e) => e.message).join("; ")}`,
     );
   }
+  // Doublon : `parseSubscribedTopics` ne l'a pas vu à notre URL → il pointe une AUTRE URL.
+  if (userErrors.length > 0) return "duplicate";
   // Garde-fou : ni erreur ni abonnement créé = faux succès silencieux (webhook manquant).
-  if (userErrors.length === 0 && !result?.webhookSubscription?.id) {
+  if (!result?.webhookSubscription?.id) {
     throw new Error(
       "Abonnement webhook : réponse sans subscription id ni userError",
     );
   }
+  return "created";
 }
 
 /**
@@ -136,11 +148,20 @@ export async function ensureIncrementalWebhooks(
     (topic) => !subscribed.has(topic),
   );
   for (const topic of missing) {
-    parseWebhookCreateResult(
+    const outcome = parseWebhookCreateResult(
       await client.query(WEBHOOK_SUBSCRIPTION_CREATE_BY_TOPIC_MUTATION, {
         topic,
         callbackUrl,
       }),
     );
+    // Doublon détecté alors que le topic n'était pas listé à notre URL → il est abonné à une
+    // AUTRE URL (déploiement obsolète / mismatch). On avertit : les événements `topic`
+    // n'atteignent PAS cet endpoint tant que l'ancien abonnement n'est pas corrigé.
+    if (outcome === "duplicate") {
+      console.warn(
+        `Webhook ${topic} déjà abonné à une autre URL que ${callbackUrl} — ` +
+          `les événements ${topic} n'atteignent pas cet endpoint.`,
+      );
+    }
   }
 }

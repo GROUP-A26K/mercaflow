@@ -52,8 +52,8 @@ describe("parseSubscribedTopics", () => {
 });
 
 describe("parseWebhookCreateResult", () => {
-  it("passe sur une création sans erreur", () => {
-    expect(() =>
+  it("renvoie 'created' sur une création sans erreur", () => {
+    expect(
       parseWebhookCreateResult({
         data: {
           webhookSubscriptionCreate: {
@@ -62,7 +62,7 @@ describe("parseWebhookCreateResult", () => {
           },
         },
       }),
-    ).not.toThrow();
+    ).toBe("created");
   });
 
   it("lève sur un vrai userError de création", () => {
@@ -78,8 +78,8 @@ describe("parseWebhookCreateResult", () => {
     ).toThrow(/is invalid/);
   });
 
-  it("tolère un doublon (course concurrente) comme succès idempotent", () => {
-    expect(() =>
+  it("renvoie 'duplicate' sur un doublon (topic abonné à une autre URL)", () => {
+    expect(
       parseWebhookCreateResult({
         data: {
           webhookSubscriptionCreate: {
@@ -93,7 +93,7 @@ describe("parseWebhookCreateResult", () => {
           },
         },
       }),
-    ).not.toThrow();
+    ).toBe("duplicate");
   });
 
   it("lève sur un faux succès (ni id ni userError)", () => {
