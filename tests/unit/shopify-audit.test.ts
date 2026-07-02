@@ -7,21 +7,23 @@ vi.mock("server-only", () => ({}));
 // (aucun I/O) → on vérifie le câblage réel read → score → persist, l'isolation par produit et
 // le comptage des échecs, pas la formule de scoring (couverte par shopify-scoring.test.ts).
 
-const { readSpy, persistSpy, fetchDiscSpy } = vi.hoisted(() => ({
+const { readSpy, readPageSpy, persistSpy, fetchDiscSpy } = vi.hoisted(() => ({
   readSpy: vi.fn(),
+  readPageSpy: vi.fn(),
   persistSpy: vi.fn(),
   fetchDiscSpy: vi.fn(),
 }));
 
 vi.mock("@/lib/data/scoring", () => ({
   readConnectionScoringInput: readSpy,
+  readConnectionScoringInputPage: readPageSpy,
   persistProductAudit: persistSpy,
 }));
 vi.mock("@/lib/shopify/discoverability", () => ({
   fetchDiscoverability: fetchDiscSpy,
 }));
 
-import { runConnectionAudit } from "@/lib/shopify/audit";
+import { runAuditBatch, runConnectionAudit } from "@/lib/shopify/audit";
 import type { ShopifyConnection } from "@/lib/data/shopify-connections";
 import type { ProductScoringRow } from "@/lib/data/scoring";
 
@@ -61,6 +63,7 @@ function row(id: string): ProductScoringRow {
 
 beforeEach(() => {
   readSpy.mockReset();
+  readPageSpy.mockReset();
   persistSpy.mockReset().mockResolvedValue(undefined);
   fetchDiscSpy.mockReset().mockResolvedValue(null);
 });
@@ -144,5 +147,69 @@ describe("runConnectionAudit", () => {
       /lecture produits KO/,
     );
     expect(persistSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("runAuditBatch (chemin durable, MER-58)", () => {
+  it("audite une page keyset et propage curseur + done depuis la lecture de page", async () => {
+    readPageSpy.mockResolvedValue({
+      rows: [row("p1"), row("p2")],
+      nextCursor: "p2",
+      done: false,
+    });
+
+    const result = await runAuditBatch(connection, {
+      afterCursor: "p0",
+      pageSize: 2,
+    });
+
+    expect(readPageSpy).toHaveBeenCalledWith("conn-1", "p0", 2);
+    expect(persistSpy).toHaveBeenCalledTimes(2);
+    expect(result).toEqual({
+      processed: 2,
+      failed: 0,
+      nextCursor: "p2",
+      done: false,
+    });
+  });
+
+  it("isole les échecs par produit sans casser le batch, et compte les échecs", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    readPageSpy.mockResolvedValue({
+      rows: [row("p1"), row("p2")],
+      nextCursor: null,
+      done: true,
+    });
+    persistSpy.mockRejectedValueOnce(new Error("persist boom"));
+
+    const result = await runAuditBatch(connection, {
+      afterCursor: null,
+      pageSize: 50,
+    });
+
+    expect(result).toEqual({
+      processed: 2,
+      failed: 1,
+      nextCursor: null,
+      done: true,
+    });
+    expect(persistSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("page vide (fin) : rien à persister, done=true", async () => {
+    readPageSpy.mockResolvedValue({ rows: [], nextCursor: null, done: true });
+
+    const result = await runAuditBatch(connection, {
+      afterCursor: "plast",
+      pageSize: 50,
+    });
+
+    expect(persistSpy).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      processed: 0,
+      failed: 0,
+      nextCursor: null,
+      done: true,
+    });
   });
 });

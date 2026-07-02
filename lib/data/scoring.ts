@@ -49,9 +49,47 @@ interface ProductRow {
   variants: VariantRow[];
 }
 
+/** Colonnes produit + variants imbriqués nécessaires au scoring (réutilisé full + paginé). */
+const PRODUCT_SELECT =
+  "id, org_id, title, description_html, vendor, status, pdp_url, " +
+  "variants(id, shopify_variant_id, gtin, price, availability, inventory_qty)";
+
+/** Transforme une ligne produit (variants imbriqués) + ses attributs en entrée de scoring. */
+function toScoringRow(
+  row: ProductRow,
+  attributesByProduct: Map<string, ScoringProduct["attributes"]>,
+): ProductScoringRow {
+  const variantIdByGid: Record<string, string> = {};
+  for (const variant of row.variants) {
+    variantIdByGid[variant.shopify_variant_id] = variant.id;
+  }
+  return {
+    productId: row.id,
+    orgId: row.org_id,
+    variantIdByGid,
+    scoring: {
+      title: row.title,
+      description_html: row.description_html,
+      vendor: row.vendor,
+      status: row.status,
+      pdp_url: row.pdp_url,
+      attributes: attributesByProduct.get(row.id) ?? [],
+      variants: row.variants.map((v) => ({
+        shopify_variant_id: v.shopify_variant_id,
+        gtin: v.gtin,
+        price: v.price,
+        availability: v.availability,
+        inventory_qty: v.inventory_qty,
+      })),
+    },
+  };
+}
+
 /**
  * Lit les produits canoniques d'une connexion (variants imbriqués + attributs produit) et
- * les transforme en entrées de scoring. Paginé (plafond REST Supabase).
+ * les transforme en entrées de scoring. Paginé (plafond REST Supabase). Charge TOUT le
+ * catalogue en mémoire → réservé aux petits volumes ; le chemin durable (MER-58) utilise
+ * `readConnectionScoringInputPage`.
  */
 export async function readConnectionScoringInput(
   connectionId: string,
@@ -61,10 +99,7 @@ export async function readConnectionScoringInput(
   for (let from = 0; ; from += PRODUCTS_PAGE_SIZE) {
     const { data, error } = await supabase
       .from("products")
-      .select(
-        "id, org_id, title, description_html, vendor, status, pdp_url, " +
-          "variants(id, shopify_variant_id, gtin, price, availability, inventory_qty)",
-      )
+      .select(PRODUCT_SELECT)
       .eq("connection_id", connectionId)
       .order("id", { ascending: true })
       .range(from, from + PRODUCTS_PAGE_SIZE - 1);
@@ -83,32 +118,61 @@ export async function readConnectionScoringInput(
     productRows.map((p) => p.id),
   );
 
-  return productRows.map((row) => {
-    const variantIdByGid: Record<string, string> = {};
-    for (const variant of row.variants) {
-      variantIdByGid[variant.shopify_variant_id] = variant.id;
-    }
-    return {
-      productId: row.id,
-      orgId: row.org_id,
-      variantIdByGid,
-      scoring: {
-        title: row.title,
-        description_html: row.description_html,
-        vendor: row.vendor,
-        status: row.status,
-        pdp_url: row.pdp_url,
-        attributes: attributesByProduct.get(row.id) ?? [],
-        variants: row.variants.map((v) => ({
-          shopify_variant_id: v.shopify_variant_id,
-          gtin: v.gtin,
-          price: v.price,
-          availability: v.availability,
-          inventory_qty: v.inventory_qty,
-        })),
-      },
-    };
-  });
+  return productRows.map((row) => toScoringRow(row, attributesByProduct));
+}
+
+/** Une page d'entrées de scoring + le curseur keyset pour la page suivante. */
+export interface ScoringInputPage {
+  rows: ProductScoringRow[];
+  /** Dernier `product.id` de la page (à repasser en `afterId`) ; null si terminé. */
+  nextCursor: string | null;
+  /** true quand la page est incomplète → plus rien à lire. */
+  done: boolean;
+}
+
+/**
+ * Lit UNE page de produits canoniques (pagination keyset par `product.id`, stable et sans
+ * dérive). Socle du worker d'audit durable (MER-58) : le curseur (`afterId`) est persisté
+ * entre les invocations cron → reprise idempotente sans doublonner ni perdre de produit.
+ */
+export async function readConnectionScoringInputPage(
+  connectionId: string,
+  afterId: string | null,
+  limit: number,
+): Promise<ScoringInputPage> {
+  // Garde-fou : une taille de page ≤ 0 renverrait 0 ligne avec `done=false` → le worker
+  // bouclerait sans progresser jusqu'à épuisement du budget. On échoue vite (bug d'appelant).
+  if (!Number.isInteger(limit) || limit <= 0) {
+    throw new Error(
+      `Taille de page invalide (${limit}) : un entier > 0 est requis.`,
+    );
+  }
+  const supabase = createAdminClient();
+  let query = supabase
+    .from("products")
+    .select(PRODUCT_SELECT)
+    .eq("connection_id", connectionId)
+    .order("id", { ascending: true })
+    .limit(limit);
+  if (afterId) {
+    query = query.gt("id", afterId);
+  }
+  const { data, error } = await query;
+  if (error) {
+    throw new Error(`Lecture d'une page (scoring) échouée : ${error.message}`);
+  }
+  const productRows = (data ?? []) as unknown as ProductRow[];
+
+  const attributesByProduct = await readProductAttributes(
+    supabase,
+    productRows.map((p) => p.id),
+  );
+  const rows = productRows.map((row) => toScoringRow(row, attributesByProduct));
+
+  const done = productRows.length < limit;
+  const nextCursor =
+    productRows.length === 0 ? null : productRows[productRows.length - 1].id;
+  return { rows, nextCursor: done ? null : nextCursor, done };
 }
 
 async function readProductAttributes(

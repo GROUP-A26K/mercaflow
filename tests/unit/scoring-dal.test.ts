@@ -23,6 +23,8 @@ const { fromSpy, rpcSpy, state } = vi.hoisted(() => {
       eq: vi.fn(() => builder),
       order: vi.fn(() => builder),
       range: vi.fn(() => builder),
+      limit: vi.fn(() => builder),
+      gt: vi.fn(() => builder),
       in: vi.fn(() => builder),
       single: vi.fn(() => builder),
       insert: vi.fn((payload: unknown) => {
@@ -50,8 +52,22 @@ vi.mock("@/lib/supabase/admin", () => ({
 import {
   persistProductAudit,
   readConnectionScoringInput,
+  readConnectionScoringInputPage,
 } from "@/lib/data/scoring";
 import type { DimensionScore, VariantEligibility } from "@/lib/shopify/scoring";
+
+function productData(id: string) {
+  return {
+    id,
+    org_id: "org_1",
+    title: `P ${id}`,
+    description_html: null,
+    vendor: null,
+    status: "ACTIVE",
+    pdp_url: `https://shop.example.com/p/${id}`,
+    variants: [],
+  };
+}
 
 beforeEach(() => {
   state.results = {};
@@ -164,6 +180,63 @@ describe("readConnectionScoringInput", () => {
     await expect(readConnectionScoringInput("conn-1")).rejects.toThrow(
       /attr boom/,
     );
+  });
+});
+
+describe("readConnectionScoringInputPage (keyset, MER-58)", () => {
+  it("renvoie une page pleine + le curseur (dernier id) et done=false", async () => {
+    state.results.products = {
+      data: [productData("prod-1"), productData("prod-2")],
+      error: null,
+    };
+    state.results.attributes = { data: [], error: null };
+
+    const page = await readConnectionScoringInputPage("conn-1", null, 2);
+
+    expect(fromSpy).toHaveBeenCalledWith("products");
+    expect(page.rows.map((r) => r.productId)).toEqual(["prod-1", "prod-2"]);
+    expect(page.nextCursor).toBe("prod-2");
+    expect(page.done).toBe(false);
+  });
+
+  it("page partielle (moins que la limite) : done=true, curseur null", async () => {
+    state.results.products = { data: [productData("prod-9")], error: null };
+    state.results.attributes = { data: [], error: null };
+
+    const page = await readConnectionScoringInputPage("conn-1", "prod-8", 5);
+
+    expect(page.rows.map((r) => r.productId)).toEqual(["prod-9"]);
+    expect(page.nextCursor).toBeNull();
+    expect(page.done).toBe(true);
+  });
+
+  it("page vide (fin du catalogue) : rows vides, done=true, pas de lecture d'attributs", async () => {
+    state.results.products = { data: [], error: null };
+
+    const page = await readConnectionScoringInputPage("conn-1", "prod-last", 5);
+
+    expect(page.rows).toEqual([]);
+    expect(page.nextCursor).toBeNull();
+    expect(page.done).toBe(true);
+    expect(fromSpy).not.toHaveBeenCalledWith("attributes");
+  });
+
+  it("propage une erreur de lecture de page", async () => {
+    state.results.products = { data: null, error: { message: "page boom" } };
+    await expect(
+      readConnectionScoringInputPage("conn-1", null, 5),
+    ).rejects.toThrow(/page boom/);
+  });
+
+  it("refuse une taille de page ≤ 0 (sinon le worker boucle sans progresser)", async () => {
+    await expect(
+      readConnectionScoringInputPage("conn-1", null, 0),
+    ).rejects.toThrow(/page invalide/);
+    await expect(
+      readConnectionScoringInputPage("conn-1", null, -5),
+    ).rejects.toThrow(/page invalide/);
+    // On n'a même pas interrogé la base.
+    expect(fromSpy).not.toHaveBeenCalledWith("products");
   });
 });
 

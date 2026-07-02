@@ -11,6 +11,9 @@ const isPublicRoute = createRouteMatcher([
   // L'install reste protégé — il a besoin de l'org active via `auth()`.
   "/api/shopify/callback",
   "/api/shopify/webhooks(.*)",
+  // Worker cron de l'audit durable (MER-58) : déclenché par Vercel Cron, authentifié par
+  // `CRON_SECRET` (pas de session Clerk).
+  "/api/shopify/jobs(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
