@@ -101,6 +101,26 @@ describe("scoreProduct", () => {
     expect(byDim.get("consistency_freshness")?.value).toBe(50);
   });
 
+  it("cohérence : une dispo INCONNUE ne compte pas comme disponible", () => {
+    const unknownAvail: ScoringProduct = {
+      ...fullProduct,
+      variants: [
+        {
+          shopify_variant_id: "gid://shopify/ProductVariant/9",
+          gtin: "0123456789012",
+          price: 10,
+          availability: null,
+          inventory_qty: null,
+        },
+      ],
+    };
+    const r = scoreProduct(unknownAvail, null);
+    // prix présent mais dispo non confirmée → 0, pas 100.
+    expect(
+      r.scores.find((s) => s.dimension === "consistency_freshness")?.value,
+    ).toBe(0);
+  });
+
   it("identité et intention sont élevées sur un produit riche", () => {
     expect(byDim.get("identity_clarity")?.value ?? 0).toBeGreaterThanOrEqual(
       80,

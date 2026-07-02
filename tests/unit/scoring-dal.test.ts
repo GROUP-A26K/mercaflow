@@ -26,6 +26,8 @@ const { fromSpy, state } = vi.hoisted(() => {
         (state.inserts[table] ??= []).push(payload);
         return builder;
       }),
+      // Suppression compensatoire de l'audit sur échec d'insert (append-only sans transaction).
+      delete: vi.fn(() => builder),
       then: (onF: (v: unknown) => unknown, onR?: (e: unknown) => unknown) =>
         Promise.resolve(result).then(onF, onR),
     };

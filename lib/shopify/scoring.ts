@@ -88,6 +88,16 @@ function hasGtin(variant: ScoringVariant): boolean {
   return typeof variant.gtin === "string" && variant.gtin.trim().length > 0;
 }
 
+/**
+ * Disponibilité CONFIRMÉE (signal positif) : `available` explicite, ou stock connu > 0.
+ * Une dispo inconnue (les deux champs null, fréquent sur une ligne webhook sans merge bulk)
+ * n'est PAS confirmée → ne compte pas comme « clean » pour la cohérence (ne pas la surévaluer).
+ */
+function isConfirmedAvailable(variant: ScoringVariant): boolean {
+  if (variant.availability === "available") return true;
+  return variant.inventory_qty != null && variant.inventory_qty > 0;
+}
+
 /** Flags d'éligibilité par variant (GTIN manquant, prix manquant, indisponibilité). */
 export function variantEligibility(
   variants: readonly ScoringVariant[],
@@ -175,9 +185,13 @@ function scoreIdentifiers(eligibility: VariantEligibility[]): DimensionScore {
   };
 }
 
-/** Dim. 7 — rollup cohérence prix+dispo depuis les flags d'éligibilité variant (V1 : interne). */
-function scoreConsistency(eligibility: VariantEligibility[]): DimensionScore {
-  const total = eligibility.length;
+/**
+ * Dim. 7 — rollup cohérence : part des variants avec prix ET disponibilité CONFIRMÉE (V1,
+ * cohérence interne). Une dispo inconnue n'est pas comptée comme clean (cf. isConfirmedAvailable)
+ * → on ne surévalue pas la dimension sur des lignes sans signal de dispo.
+ */
+function scoreConsistency(variants: readonly ScoringVariant[]): DimensionScore {
+  const total = variants.length;
   if (total === 0) {
     return {
       dimension: "consistency_freshness",
@@ -185,8 +199,8 @@ function scoreConsistency(eligibility: VariantEligibility[]): DimensionScore {
       evidence: { data_gap: true, reason: "no_variant" },
     };
   }
-  const clean = eligibility.filter(
-    (e) => !e.issues.price_missing && !e.issues.unavailable,
+  const clean = variants.filter(
+    (v) => v.price != null && isConfirmedAvailable(v),
   ).length;
   return {
     dimension: "consistency_freshness",
@@ -246,7 +260,7 @@ export function scoreProduct(
     scoreSpecs(product),
     scoreIdentifiers(eligibility),
     scoreTrust(),
-    scoreConsistency(eligibility),
+    scoreConsistency(product.variants),
   ];
   return { scores, eligibility };
 }

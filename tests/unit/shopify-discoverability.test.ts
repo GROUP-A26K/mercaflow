@@ -25,6 +25,11 @@ describe("parseDiscoverability", () => {
     expect(parseDiscoverability(html).indexable).toBe(false);
   });
 
+  it("détecte noindex même si content précède name (ordre inversé)", () => {
+    const html = `<head><meta content="noindex" name="robots"></head>`;
+    expect(parseDiscoverability(html).indexable).toBe(false);
+  });
+
   it("absence de JSON-LD Product et d'OG → false", () => {
     const html = `<html><head><title>rien</title></head></html>`;
     const sig = parseDiscoverability(html);

@@ -27,12 +27,27 @@ function hasOpenGraph(html: string): boolean {
   return /<meta[^>]+property=["']og:(?:title|type)["']/i.test(html);
 }
 
-function isIndexable(html: string): boolean {
-  const robots = html.match(
-    /<meta[^>]+name=["']robots["'][^>]*content=["']([^"']*)["']/i,
+const META_TAG = /<meta\b[^>]*>/gi;
+
+/** Valeur d'un attribut dans une balise (ordre des attributs indifférent). */
+function tagAttr(tag: string, attr: "name" | "content"): string | null {
+  const m = tag.match(
+    attr === "name"
+      ? /\bname=["']([^"']*)["']/i
+      : /\bcontent=["']([^"']*)["']/i,
   );
-  if (!robots) return true; // pas de directive robots → indexable par défaut
-  return !/noindex/i.test(robots[1]);
+  return m ? m[1] : null;
+}
+
+function isIndexable(html: string): boolean {
+  // Balayer les <meta> et repérer un robots=noindex, quel que soit l'ORDRE des attributs
+  // (`name` avant/après `content`) — un ordre inversé est du HTML valide fréquent.
+  for (const match of html.matchAll(META_TAG)) {
+    const tag = match[0];
+    if (tagAttr(tag, "name")?.toLowerCase() !== "robots") continue;
+    if (/noindex/i.test(tagAttr(tag, "content") ?? "")) return false;
+  }
+  return true; // pas de directive noindex → indexable par défaut
 }
 
 /** Analyse le HTML d'une PDP en signaux de découvrabilité (pur, sans I/O). */
