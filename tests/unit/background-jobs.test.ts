@@ -3,43 +3,43 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 // DAL des jobs durables (MER-58). Écriture/mutation via client SERVICE-ROLE (le worker cron
-// n'a pas de session Clerk). On mocke `from` (capture des payloads insert/update + le filtre
-// `eq`) et `rpc` (claim atomique). Le claim passe TOUJOURS par la RPC SKIP LOCKED — jamais par
-// un SELECT applicatif.
+// n'a pas de session Clerk). On mocke `from` (capture insert + update chaîné avec ses filtres
+// `eq`) et `rpc` (claim atomique). Les mutations de job sont bornées à la propriété du claim
+// (`id` + `attempts` attendu = verrou optimiste) : 0 ligne touchée → `LostLeaseError`.
 
 const { fromSpy, rpcSpy, state } = vi.hoisted(() => {
   const state: {
     inserts: unknown[];
-    updates: { payload: unknown; eq: [string, unknown] | null }[];
+    updates: { payload: unknown; filters: [string, unknown][] }[];
     fromResult: { data?: unknown; error: unknown };
     rpcResult: { data?: unknown; error: unknown };
     rpcCalls: { name: string; args: unknown }[];
   } = {
     inserts: [],
     updates: [],
-    fromResult: { error: null },
+    fromResult: { data: [{ id: "job-1" }], error: null },
     rpcResult: { data: null, error: null },
     rpcCalls: [],
   };
 
   const fromSpy = vi.fn(() => {
-    let pendingUpdate: unknown = undefined;
+    let current: { payload: unknown; filters: [string, unknown][] } | null =
+      null;
     const builder: Record<string, unknown> = {
       insert: vi.fn((payload: unknown) => {
         state.inserts.push(payload);
         return builder;
       }),
       update: vi.fn((payload: unknown) => {
-        pendingUpdate = payload;
-        state.updates.push({ payload, eq: null });
+        current = { payload, filters: [] };
+        state.updates.push(current);
         return builder;
       }),
       eq: vi.fn((col: string, val: unknown) => {
-        if (pendingUpdate !== undefined) {
-          state.updates[state.updates.length - 1].eq = [col, val];
-        }
+        if (current) current.filters.push([col, val]);
         return builder;
       }),
+      select: vi.fn(() => builder),
       then: (onF: (v: unknown) => unknown, onR?: (e: unknown) => unknown) =>
         Promise.resolve(state.fromResult).then(onF, onR),
     };
@@ -65,13 +65,14 @@ import {
   completeJob,
   enqueueAuditJob,
   failJob,
+  LostLeaseError,
   saveJobProgress,
 } from "@/lib/data/background-jobs";
 
 beforeEach(() => {
   state.inserts = [];
   state.updates = [];
-  state.fromResult = { error: null };
+  state.fromResult = { data: [{ id: "job-1" }], error: null };
   state.rpcResult = { data: null, error: null };
   state.rpcCalls = [];
   fromSpy.mockClear();
@@ -92,6 +93,7 @@ describe("enqueueAuditJob", () => {
   });
 
   it("est idempotent : un doublon (unique_violation 23505) est absorbé, pas d'erreur", async () => {
+    vi.spyOn(console, "info").mockImplementation(() => {});
     state.fromResult = { error: { code: "23505", message: "duplicate" } };
     await expect(
       enqueueAuditJob({ orgId: "org_1", connectionId: "conn-1" }),
@@ -155,17 +157,59 @@ describe("claimAuditJob", () => {
   });
 });
 
+describe("checkpointJob", () => {
+  it("sauvegarde le curseur (running + lease renouvelé), borné à id + attempts attendu", async () => {
+    await checkpointJob({
+      id: "job-1",
+      expectedAttempts: 3,
+      cursor: "prod-50",
+      processed: 50,
+      failed: 1,
+    });
+
+    const upd = state.updates[0];
+    // Verrou optimiste : filtré par id ET par attempts du claim.
+    expect(upd.filters).toEqual([
+      ["id", "job-1"],
+      ["attempts", 3],
+    ]);
+    const payload = upd.payload as Record<string, unknown>;
+    expect(payload.status).toBe("running");
+    expect(payload.cursor).toBe("prod-50");
+    expect(payload.processed).toBe(50);
+    expect(payload.failed).toBe(1);
+    expect(typeof payload.locked_at).toBe("string");
+  });
+
+  it("lève LostLeaseError si aucune ligne n'est touchée (job repris par un autre worker)", async () => {
+    state.fromResult = { data: [], error: null };
+    await expect(
+      checkpointJob({
+        id: "job-1",
+        expectedAttempts: 2,
+        cursor: "prod-9",
+        processed: 9,
+        failed: 0,
+      }),
+    ).rejects.toBeInstanceOf(LostLeaseError);
+  });
+});
+
 describe("saveJobProgress", () => {
-  it("sauvegarde le curseur, relâche le job (queued, lease libéré) et remet attempts à 0", async () => {
+  it("relâche le job (queued, lease libéré, attempts remis à 0), borné au claim", async () => {
     await saveJobProgress({
       id: "job-1",
+      expectedAttempts: 4,
       cursor: "prod-99",
       processed: 150,
       failed: 3,
     });
 
     const upd = state.updates[0];
-    expect(upd.eq).toEqual(["id", "job-1"]);
+    expect(upd.filters).toEqual([
+      ["id", "job-1"],
+      ["attempts", 4],
+    ]);
     expect(upd.payload).toEqual({
       cursor: "prod-99",
       processed: 150,
@@ -177,33 +221,20 @@ describe("saveJobProgress", () => {
   });
 });
 
-describe("checkpointJob", () => {
-  it("sauvegarde le curseur en gardant le job running et en renouvelant le lease", async () => {
-    await checkpointJob({
+describe("completeJob", () => {
+  it("marque le job completed (compteurs finaux + date de fin), borné au claim", async () => {
+    await completeJob({
       id: "job-1",
-      cursor: "prod-50",
-      processed: 50,
-      failed: 1,
+      expectedAttempts: 1,
+      processed: 200,
+      failed: 5,
     });
 
     const upd = state.updates[0];
-    expect(upd.eq).toEqual(["id", "job-1"]);
-    const payload = upd.payload as Record<string, unknown>;
-    expect(payload.status).toBe("running");
-    expect(payload.cursor).toBe("prod-50");
-    expect(payload.processed).toBe(50);
-    expect(payload.failed).toBe(1);
-    // Lease renouvelé (pas libéré) → un job long n'est pas volé par un re-claim.
-    expect(typeof payload.locked_at).toBe("string");
-  });
-});
-
-describe("completeJob", () => {
-  it("marque le job completed avec les compteurs finaux et une date de fin", async () => {
-    await completeJob({ id: "job-1", processed: 200, failed: 5 });
-
-    const upd = state.updates[0];
-    expect(upd.eq).toEqual(["id", "job-1"]);
+    expect(upd.filters).toEqual([
+      ["id", "job-1"],
+      ["attempts", 1],
+    ]);
     const payload = upd.payload as Record<string, unknown>;
     expect(payload.status).toBe("completed");
     expect(payload.processed).toBe(200);
@@ -214,11 +245,18 @@ describe("completeJob", () => {
 });
 
 describe("failJob", () => {
-  it("marque le job failed avec le message d'erreur et libère le lease", async () => {
-    await failJob({ id: "job-1", error: "connexion révoquée" });
+  it("marque le job failed avec le message d'erreur, borné au claim", async () => {
+    await failJob({
+      id: "job-1",
+      expectedAttempts: 1,
+      error: "connexion révoquée",
+    });
 
     const upd = state.updates[0];
-    expect(upd.eq).toEqual(["id", "job-1"]);
+    expect(upd.filters).toEqual([
+      ["id", "job-1"],
+      ["attempts", 1],
+    ]);
     const payload = upd.payload as Record<string, unknown>;
     expect(payload.status).toBe("failed");
     expect(payload.last_error).toBe("connexion révoquée");

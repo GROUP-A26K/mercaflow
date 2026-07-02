@@ -55,6 +55,44 @@ function mapJob(row: BackgroundJobRow): BackgroundJob {
 }
 
 /**
+ * Levée quand une mutation ne touche AUCUNE ligne parce que le job a été repris par un autre
+ * worker (lease périmé → re-claim → `attempts` incrémenté). Signale au worker courant qu'il est
+ * un zombie et doit s'arrêter SANS réécrire (sinon corruption du curseur/statut).
+ */
+export class LostLeaseError extends Error {
+  constructor(id: string) {
+    super(`Lease perdu sur le job ${id} (repris par un autre worker)`);
+    this.name = "LostLeaseError";
+  }
+}
+
+/**
+ * UPDATE optimiste borné à la propriété du claim : `id` + `attempts` attendu (verrou optimiste).
+ * Un re-claim incrémente `attempts` → l'ancien worker ne matche plus 0 ligne → `LostLeaseError`.
+ * `.select("id")` fait remonter les lignes affectées pour détecter le cas « 0 ligne ».
+ */
+async function updateOwnedJob(
+  id: string,
+  expectedAttempts: number,
+  patch: Record<string, unknown>,
+  context: string,
+): Promise<void> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("background_jobs")
+    .update(patch)
+    .eq("id", id)
+    .eq("attempts", expectedAttempts)
+    .select("id");
+  if (error) {
+    throw new Error(`${context} : ${error.message}`);
+  }
+  if (!data || (Array.isArray(data) && data.length === 0)) {
+    throw new LostLeaseError(id);
+  }
+}
+
+/**
  * Enqueue un job d'audit pour une connexion. Idempotent : l'index partiel unique
  * `uniq_background_jobs_active` garantit au plus UN job actif (queued/running) par
  * (connexion, type) → un webhook bulk-finish retenté par Shopify n'empile pas de doublons
@@ -71,7 +109,16 @@ export async function enqueueAuditJob(params: {
     connection_id: params.connectionId,
     status: "queued",
   });
-  if (error && error.code !== "23505") {
+  if (error && error.code === "23505") {
+    // Un job d'audit actif existe déjà pour cette connexion : no-op idempotent. En V1 la
+    // cadence de ré-audit est au niveau d'un cycle de sync bulk — les produits changés par une
+    // 2ᵉ sync concurrente seront ré-audités au prochain cycle (ré-audit par changement = suivi).
+    console.info(
+      `Job d'audit déjà actif pour la connexion ${params.connectionId} — enqueue ignoré (idempotent).`,
+    );
+    return;
+  }
+  if (error) {
     throw new Error(`Enqueue du job d'audit échoué : ${error.message}`);
   }
 }
@@ -102,24 +149,23 @@ export async function claimAuditJob(
  */
 export async function checkpointJob(params: {
   id: string;
+  expectedAttempts: number;
   cursor: string | null;
   processed: number;
   failed: number;
 }): Promise<void> {
-  const supabase = createAdminClient();
-  const { error } = await supabase
-    .from("background_jobs")
-    .update({
+  await updateOwnedJob(
+    params.id,
+    params.expectedAttempts,
+    {
       cursor: params.cursor,
       processed: params.processed,
       failed: params.failed,
       status: "running",
       locked_at: new Date().toISOString(),
-    })
-    .eq("id", params.id);
-  if (error) {
-    throw new Error(`Checkpoint du job échoué : ${error.message}`);
-  }
+    },
+    "Checkpoint du job échoué",
+  );
 }
 
 /**
@@ -130,65 +176,62 @@ export async function checkpointJob(params: {
  */
 export async function saveJobProgress(params: {
   id: string;
+  expectedAttempts: number;
   cursor: string | null;
   processed: number;
   failed: number;
 }): Promise<void> {
-  const supabase = createAdminClient();
-  const { error } = await supabase
-    .from("background_jobs")
-    .update({
+  await updateOwnedJob(
+    params.id,
+    params.expectedAttempts,
+    {
       cursor: params.cursor,
       processed: params.processed,
       failed: params.failed,
       status: "queued",
       locked_at: null,
       attempts: 0,
-    })
-    .eq("id", params.id);
-  if (error) {
-    throw new Error(`Sauvegarde de la progression échouée : ${error.message}`);
-  }
+    },
+    "Sauvegarde de la progression échouée",
+  );
 }
 
-/** Marque un job terminé (compteurs finaux + date de fin, lease libéré). */
+/** Marque un job terminé (compteurs finaux + date de fin, lease libéré), borné au claim courant. */
 export async function completeJob(params: {
   id: string;
+  expectedAttempts: number;
   processed: number;
   failed: number;
 }): Promise<void> {
-  const supabase = createAdminClient();
-  const { error } = await supabase
-    .from("background_jobs")
-    .update({
+  await updateOwnedJob(
+    params.id,
+    params.expectedAttempts,
+    {
       status: "completed",
       processed: params.processed,
       failed: params.failed,
       finished_at: new Date().toISOString(),
       locked_at: null,
-    })
-    .eq("id", params.id);
-  if (error) {
-    throw new Error(`Clôture du job échouée : ${error.message}`);
-  }
+    },
+    "Clôture du job échouée",
+  );
 }
 
-/** Marque un job en échec terminal (message d'erreur, lease libéré). */
+/** Marque un job en échec terminal (message d'erreur, lease libéré), borné au claim courant. */
 export async function failJob(params: {
   id: string;
+  expectedAttempts: number;
   error: string;
 }): Promise<void> {
-  const supabase = createAdminClient();
-  const { error } = await supabase
-    .from("background_jobs")
-    .update({
+  await updateOwnedJob(
+    params.id,
+    params.expectedAttempts,
+    {
       status: "failed",
       last_error: params.error,
       finished_at: new Date().toISOString(),
       locked_at: null,
-    })
-    .eq("id", params.id);
-  if (error) {
-    throw new Error(`Marquage du job en échec impossible : ${error.message}`);
-  }
+    },
+    "Marquage du job en échec impossible",
+  );
 }

@@ -227,6 +227,17 @@ describe("readConnectionScoringInputPage (keyset, MER-58)", () => {
       readConnectionScoringInputPage("conn-1", null, 5),
     ).rejects.toThrow(/page boom/);
   });
+
+  it("refuse une taille de page ≤ 0 (sinon le worker boucle sans progresser)", async () => {
+    await expect(
+      readConnectionScoringInputPage("conn-1", null, 0),
+    ).rejects.toThrow(/page invalide/);
+    await expect(
+      readConnectionScoringInputPage("conn-1", null, -5),
+    ).rejects.toThrow(/page invalide/);
+    // On n'a même pas interrogé la base.
+    expect(fromSpy).not.toHaveBeenCalledWith("products");
+  });
 });
 
 const scores: DimensionScore[] = [

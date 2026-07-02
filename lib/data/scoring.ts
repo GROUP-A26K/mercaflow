@@ -140,6 +140,13 @@ export async function readConnectionScoringInputPage(
   afterId: string | null,
   limit: number,
 ): Promise<ScoringInputPage> {
+  // Garde-fou : une taille de page ≤ 0 renverrait 0 ligne avec `done=false` → le worker
+  // bouclerait sans progresser jusqu'à épuisement du budget. On échoue vite (bug d'appelant).
+  if (!Number.isInteger(limit) || limit <= 0) {
+    throw new Error(
+      `Taille de page invalide (${limit}) : un entier > 0 est requis.`,
+    );
+  }
   const supabase = createAdminClient();
   let query = supabase
     .from("products")

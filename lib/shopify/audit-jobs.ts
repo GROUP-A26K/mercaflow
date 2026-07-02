@@ -5,6 +5,7 @@ import {
   claimAuditJob,
   completeJob,
   failJob,
+  LostLeaseError,
   saveJobProgress,
 } from "@/lib/data/background-jobs";
 import { getConnectionById } from "@/lib/data/shopify-connections";
@@ -19,10 +20,18 @@ import type { FetchLike } from "@/lib/shopify/discoverability";
 
 /** Lease : au-delà, un job `running` est considéré orphelin et re-réclamable (worker mort). */
 const DEFAULT_LEASE_SECONDS = 300;
-/** Produits audités par page (keyset). Petit → peu de perte en cas de crash intra-page. */
-const DEFAULT_PAGE_SIZE = 100;
-/** Budget temps mou d'une invocation worker : on relâche avant la limite serverless. */
-const DEFAULT_TIME_BUDGET_MS = 50_000;
+/**
+ * Produits audités par page (keyset). Borné pour qu'UNE page tienne DANS la fenêtre serverless :
+ * pire cas ≈ ceil(pageSize / concurrence 5) × timeout fetch PDP 8 s. À 25 → ~5 tours × 8 s = 40 s.
+ */
+const DEFAULT_PAGE_SIZE = 25;
+/**
+ * Budget temps : on n'ENTAME une nouvelle page que si l'écoulé est sous ce seuil, en laissant la
+ * place au pire cas d'une page (~40 s). 15 s + 40 s = 55 s < `maxDuration` route (60 s) → jamais
+ * coupé en plein milieu (sinon checkpoint perdu + un `attempts` consommé pour rien). La 1ʳᵉ page
+ * s'exécute toujours (écoulé = 0). Invariant : budget + pire-cas-page < maxDuration.
+ */
+const DEFAULT_TIME_BUDGET_MS = 15_000;
 
 export interface DrainAuditOptions {
   leaseSeconds?: number;
@@ -43,6 +52,8 @@ export interface DrainAuditResult {
   failed: number;
   /** true si le job a été mené à complétion dans cette invocation. */
   done: boolean;
+  /** true si l'invocation s'est arrêtée car le job a été repris par un autre worker. */
+  lostLease?: boolean;
 }
 
 /**
@@ -63,8 +74,17 @@ export async function drainAuditJobs(
     return { claimed: false, processed: 0, failed: 0, done: false };
   }
 
+  // `attempts` du claim = jeton de propriété : toute mutation est bornée à cette valeur (verrou
+  // optimiste). Si un autre worker re-réclame (lease périmé → attempts++), nos écritures matchent
+  // 0 ligne → `LostLeaseError` → arrêt propre sans corrompre le curseur/statut du job.
+  const expectedAttempts = claimed.attempts;
+
   if (!claimed.connectionId) {
-    await failJob({ id: claimed.id, error: "job d'audit sans connection_id" });
+    await failJob({
+      id: claimed.id,
+      expectedAttempts,
+      error: "job d'audit sans connection_id",
+    });
     return {
       claimed: true,
       jobId: claimed.id,
@@ -78,6 +98,7 @@ export async function drainAuditJobs(
   if (!connection || connection.status !== "active") {
     await failJob({
       id: claimed.id,
+      expectedAttempts,
       error: `connexion ${claimed.connectionId} introuvable ou inactive`,
     });
     return {
@@ -94,43 +115,76 @@ export async function drainAuditJobs(
   let failed = claimed.failed;
   const start = now();
 
-  for (;;) {
-    const batch = await runAuditBatch(connection, {
-      afterCursor: cursor,
-      pageSize,
-      fetchImpl: options.fetchImpl,
-    });
-    processed += batch.processed;
-    failed += batch.failed;
+  try {
+    for (;;) {
+      const batch = await runAuditBatch(connection, {
+        afterCursor: cursor,
+        pageSize,
+        fetchImpl: options.fetchImpl,
+      });
+      processed += batch.processed;
+      failed += batch.failed;
 
-    if (batch.done) {
-      await completeJob({ id: claimed.id, processed, failed });
-      return {
-        claimed: true,
-        jobId: claimed.id,
+      if (batch.done) {
+        await completeJob({
+          id: claimed.id,
+          expectedAttempts,
+          processed,
+          failed,
+        });
+        return {
+          claimed: true,
+          jobId: claimed.id,
+          processed,
+          failed,
+          done: true,
+        };
+      }
+
+      // Page pleine → il reste des produits ; `nextCursor` est non-null.
+      cursor = batch.nextCursor;
+
+      if (now() - start >= timeBudgetMs) {
+        // Budget atteint : relâcher (queued) → le tick cron suivant reprend au curseur.
+        await saveJobProgress({
+          id: claimed.id,
+          expectedAttempts,
+          cursor,
+          processed,
+          failed,
+        });
+        return {
+          claimed: true,
+          jobId: claimed.id,
+          processed,
+          failed,
+          done: false,
+        };
+      }
+
+      // Continuer dans la même invocation, mais checkpointer (running + lease renouvelé) pour
+      // borner la reprise à une page en cas de crash.
+      await checkpointJob({
+        id: claimed.id,
+        expectedAttempts,
+        cursor,
         processed,
         failed,
-        done: true,
-      };
+      });
     }
-
-    // Page pleine → il reste des produits ; `nextCursor` est non-null.
-    cursor = batch.nextCursor;
-
-    if (now() - start >= timeBudgetMs) {
-      // Budget atteint : relâcher (queued) → le tick cron suivant reprend au curseur.
-      await saveJobProgress({ id: claimed.id, cursor, processed, failed });
+  } catch (error) {
+    if (error instanceof LostLeaseError) {
+      // Un autre worker a repris le job (notre lease avait expiré) → on s'efface sans réécrire.
+      console.warn(error.message);
       return {
         claimed: true,
         jobId: claimed.id,
         processed,
         failed,
         done: false,
+        lostLease: true,
       };
     }
-
-    // Continuer dans la même invocation, mais checkpointer (running + lease renouvelé) pour
-    // borner la reprise à une page en cas de crash.
-    await checkpointJob({ id: claimed.id, cursor, processed, failed });
+    throw error;
   }
 }

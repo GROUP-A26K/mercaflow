@@ -15,18 +15,29 @@ const {
   failSpy,
   getConnSpy,
   runBatchSpy,
-} = vi.hoisted(() => ({
-  claimSpy: vi.fn(),
-  checkpointSpy: vi.fn(),
-  saveProgressSpy: vi.fn(),
-  completeSpy: vi.fn(),
-  failSpy: vi.fn(),
-  getConnSpy: vi.fn(),
-  runBatchSpy: vi.fn(),
-}));
+  LostLeaseError,
+} = vi.hoisted(() => {
+  class LostLeaseError extends Error {
+    constructor(id: string) {
+      super(`Lease perdu sur le job ${id}`);
+      this.name = "LostLeaseError";
+    }
+  }
+  return {
+    claimSpy: vi.fn(),
+    checkpointSpy: vi.fn(),
+    saveProgressSpy: vi.fn(),
+    completeSpy: vi.fn(),
+    failSpy: vi.fn(),
+    getConnSpy: vi.fn(),
+    runBatchSpy: vi.fn(),
+    LostLeaseError,
+  };
+});
 
 vi.mock("@/lib/data/background-jobs", () => ({
   AUDIT_JOB_TYPE: "catalog_audit",
+  LostLeaseError,
   claimAuditJob: claimSpy,
   checkpointJob: checkpointSpy,
   saveJobProgress: saveProgressSpy,
@@ -122,10 +133,11 @@ describe("drainAuditJobs", () => {
       pageSize: 2,
       fetchImpl: undefined,
     });
-    // Un checkpoint entre les pages (running, curseur p2), pas de release.
+    // Un checkpoint entre les pages (running, curseur p2), pas de release. Borné au claim (attempts=1).
     expect(checkpointSpy).toHaveBeenCalledTimes(1);
     expect(checkpointSpy).toHaveBeenCalledWith({
       id: "job-1",
+      expectedAttempts: 1,
       cursor: "p2",
       processed: 12,
       failed: 1,
@@ -134,6 +146,7 @@ describe("drainAuditJobs", () => {
     // Complétion avec les compteurs cumulés (baseline du job + 2 pages).
     expect(completeSpy).toHaveBeenCalledWith({
       id: "job-1",
+      expectedAttempts: 1,
       processed: 13,
       failed: 2,
     });
@@ -162,6 +175,7 @@ describe("drainAuditJobs", () => {
     expect(runBatchSpy).toHaveBeenCalledTimes(1);
     expect(saveProgressSpy).toHaveBeenCalledWith({
       id: "job-1",
+      expectedAttempts: 1,
       cursor: "p5",
       processed: 5,
       failed: 0,
@@ -176,7 +190,7 @@ describe("drainAuditJobs", () => {
     });
   });
 
-  it("échec terminal si la connexion du job est introuvable ou inactive", async () => {
+  it("échec terminal si la connexion du job est inactive (révoquée)", async () => {
     claimSpy.mockResolvedValue(job());
     getConnSpy.mockResolvedValue({ ...activeConnection, status: "revoked" });
 
@@ -184,11 +198,26 @@ describe("drainAuditJobs", () => {
 
     expect(failSpy).toHaveBeenCalledWith({
       id: "job-1",
+      expectedAttempts: 1,
       error: expect.stringContaining("conn-1"),
     });
     expect(runBatchSpy).not.toHaveBeenCalled();
     expect(result.done).toBe(false);
     expect(result.claimed).toBe(true);
+  });
+
+  it("échec terminal si la connexion du job est introuvable (null)", async () => {
+    claimSpy.mockResolvedValue(job());
+    getConnSpy.mockResolvedValue(null);
+
+    await drainAuditJobs();
+
+    expect(failSpy).toHaveBeenCalledWith({
+      id: "job-1",
+      expectedAttempts: 1,
+      error: expect.stringContaining("conn-1"),
+    });
+    expect(runBatchSpy).not.toHaveBeenCalled();
   });
 
   it("échec terminal si le job n'a pas de connection_id", async () => {
@@ -199,5 +228,31 @@ describe("drainAuditJobs", () => {
     expect(failSpy).toHaveBeenCalled();
     expect(getConnSpy).not.toHaveBeenCalled();
     expect(runBatchSpy).not.toHaveBeenCalled();
+  });
+
+  it("s'arrête proprement (lostLease) si un checkpoint révèle un job repris par un autre worker", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    claimSpy.mockResolvedValue(job({ cursor: null, processed: 0, failed: 0 }));
+    runBatchSpy.mockResolvedValue({
+      processed: 3,
+      failed: 0,
+      nextCursor: "p3",
+      done: false,
+    });
+    // Le checkpoint échoue en LostLeaseError → le worker s'efface sans compléter.
+    checkpointSpy.mockRejectedValueOnce(new LostLeaseError("job-1"));
+
+    const result = await drainAuditJobs({ timeBudgetMs: 50_000 });
+
+    expect(result).toEqual({
+      claimed: true,
+      jobId: "job-1",
+      processed: 3,
+      failed: 0,
+      done: false,
+      lostLease: true,
+    });
+    expect(completeSpy).not.toHaveBeenCalled();
+    expect(saveProgressSpy).not.toHaveBeenCalled();
   });
 });

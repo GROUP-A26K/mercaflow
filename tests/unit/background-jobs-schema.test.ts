@@ -33,7 +33,10 @@ describe("migration 0007_background_jobs", () => {
     expect(migration).toMatch(
       /create unique index uniq_background_jobs_active/,
     );
-    expect(migration).toMatch(/where status in \('queued', 'running'\)/);
+    // Exclut les jobs épuisés du prédicat → un job « poison » ne bloque pas un futur enqueue.
+    expect(migration).toMatch(
+      /where status in \('queued', 'running'\) and attempts < max_attempts/,
+    );
   });
 
   it("réclame les jobs atomiquement (FOR UPDATE SKIP LOCKED) avec lease", () => {

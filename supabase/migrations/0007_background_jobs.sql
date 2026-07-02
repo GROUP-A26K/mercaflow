@@ -32,9 +32,13 @@ create table public.background_jobs (
 
 -- Anti-doublon : au plus UN job actif (queued/running) par (connexion, type). Le webhook
 -- bulk-finish peut être retenté par Shopify → l'enqueue devient idempotent (ON CONFLICT).
+-- ⚠️ On EXCLUT les jobs épuisés (`attempts >= max_attempts`) : un job « poison » (échec répété
+-- avant tout progrès) sort du claim (`attempts < max_attempts`) MAIS resterait sinon compté par
+-- l'index → il bloquerait à jamais tout nouvel audit de la connexion. En l'excluant, un enqueue
+-- ultérieur repart proprement (le job poison devient un vestige inerte, jamais réclamé).
 create unique index uniq_background_jobs_active
   on public.background_jobs (connection_id, type)
-  where status in ('queued', 'running');
+  where status in ('queued', 'running') and attempts < max_attempts;
 
 create index idx_background_jobs_org    on public.background_jobs (org_id);
 create index idx_background_jobs_claim  on public.background_jobs (type, status, created_at);
