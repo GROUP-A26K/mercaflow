@@ -1,0 +1,42 @@
+tests/unit/scoring-dal.test.ts
+  s_9bc3a96a9ba461::t_771b6081a9dbe2 230-240
+lib/data/scoring.ts
+  s_9bc3a96a9ba461::t_27e0bc4ca208ed 143-149
+tests/unit/background-jobs-schema.test.ts
+  s_9bc3a96a9ba461::t_f5a5bc8491f079 36-39
+supabase/migrations/0007_background_jobs.sql
+  s_9bc3a96a9ba461::t_b9c0ace81c9a90 35-38,41
+lib/data/background-jobs.ts
+  s_9bc3a96a9ba461::t_516cff9b72e88d 112-121
+  s_9bc3a96a9ba461::t_4f009d2d006135 179,184-187,194-196
+  s_9bc3a96a9ba461::t_4446c5ea65fb96 57-94
+  s_9bc3a96a9ba461::t_d486b6e9f93da2 152,157-160,166-168
+  s_9bc3a96a9ba461::t_425dae73608d77 199,202,206-209,215-217,220,223,226-229,234-236
+tests/unit/background-jobs.test.ts
+  s_9bc3a96a9ba461::t_baf8ad0f53e8b5 6-8,13,20,26-27,34-35,39,42,68,75,96,160-197,199,202,209-212,224-226,228-230,234-237,248-253,256-259
+tests/unit/audit-jobs.test.ts
+  s_9bc3a96a9ba461::t_458adc803534f1 18-36,40
+  s_9bc3a96a9ba461::t_3832ecdacd013a 136,140,149
+  s_9bc3a96a9ba461::t_aa2faa1484bd81 193,201,209-222,232-257
+  s_9bc3a96a9ba461::t_ae9fadd9d1fd5d 178
+lib/shopify/audit-jobs.ts
+  s_9bc3a96a9ba461::t_c23eec373de543 55-56
+  s_9bc3a96a9ba461::t_e575f948750a20 8,23-34
+  s_9bc3a96a9ba461::t_236894d4e76ff1 77-81,83-87,101,118-126,128-170,173,175-178,185,188
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "6324e8699504824d58cd68c732d3bc9ce8ffe503",
+  "prompts": {},
+  "sessions": {
+    "s_9bc3a96a9ba461": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "374fbf86-6e92-4d30-b3b4-bf8b20ece4d5",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
