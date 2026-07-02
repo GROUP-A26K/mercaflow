@@ -1,0 +1,39 @@
+lib/shopify/scoring.ts
+  s_418a6894af41f9::t_48d9ceea1d34b4 1-252
+lib/shopify/audit.ts
+  s_418a6894af41f9::t_33c8b141f9b86a 1-84
+app/api/shopify/webhooks/bulk-operations-finish/route.ts
+  s_418a6894af41f9::t_69774f598c44b7 11
+  s_418a6894af41f9::t_8a5e277c242280 114-120
+lib/data/scoring.ts
+  s_418a6894af41f9::t_7f0310cd435e4d 1-64,68,70-120,124-131,137-186,190-217
+  s_418a6894af41f9::t_a27bfa81426e11 65-67,121-123,132-136,187-189
+  s_418a6894af41f9::t_699e80d6de42dc 69
+lib/shopify/discoverability.ts
+  s_418a6894af41f9::t_ba8528563fcbad 1-76
+MEMORY.md
+  s_418a6894af41f9::t_75f290c99ccf9d 134
+tests/unit/shopify-scoring.test.ts
+  s_418a6894af41f9::t_a27bfa81426e11 15-17,105-107,122-124
+  s_418a6894af41f9::t_69060062dc9f9d 1-14,18-104,108-121,125-131
+tests/unit/shopify-discoverability.test.ts
+  s_418a6894af41f9::t_2f0b42b1cd9da3 1-74
+supabase/migrations/0005_current_scores_view.sql
+  s_418a6894af41f9::t_571735d7332b9b 1-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "be1451e6bfe72c0f56af0961eee2444d0bbaf571",
+  "prompts": {},
+  "sessions": {
+    "s_418a6894af41f9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ea6c9e11-6196-4dca-b5cd-75422e94d2af",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
