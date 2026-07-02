@@ -1,0 +1,22 @@
+tests/unit/scoring-dal.test.ts
+  s_1131574a42b277::t_322a2bc05f1295 106,217-221
+  s_1131574a42b277::t_c0783548900e62 1-105,107-216,222-287
+tests/unit/shopify-audit.test.ts
+  s_1131574a42b277::t_eeeb2b77498f84 1-148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "991ad429be486dafb8a56b22870b3da4f8eb1105",
+  "prompts": {},
+  "sessions": {
+    "s_1131574a42b277": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "973f9b85-dade-41e4-b842-2ee0cd87edf7",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
