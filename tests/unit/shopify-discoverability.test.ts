@@ -47,6 +47,21 @@ describe("parseDiscoverability", () => {
     const html = `<script type="application/ld+json">{"@type":["Product","Clothing"]}</script>`;
     expect(parseDiscoverability(html).jsonLdProduct).toBe(true);
   });
+
+  it("détecte un @type en IRI complet https://schema.org/Product", () => {
+    const html = `<script type="application/ld+json">{"@type":"https://schema.org/Product"}</script>`;
+    expect(parseDiscoverability(html).jsonLdProduct).toBe(true);
+  });
+
+  it("tolère un type de script non quoté + paramètre MIME", () => {
+    const html = `<script type=application/ld+json; charset=utf-8>{"@type":"Product"}</script>`;
+    expect(parseDiscoverability(html).jsonLdProduct).toBe(true);
+  });
+
+  it("détecte noindex avec des attributs meta non quotés", () => {
+    const html = `<meta name=robots content=noindex>`;
+    expect(parseDiscoverability(html).indexable).toBe(false);
+  });
 });
 
 describe("fetchDiscoverability", () => {

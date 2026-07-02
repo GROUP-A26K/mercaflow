@@ -142,6 +142,19 @@ describe("scoreProduct", () => {
     ).toBe(0);
   });
 
+  it("intention : une description purement markup ne reçoit aucun point de présence", () => {
+    const markupOnly: ScoringProduct = {
+      ...fullProduct,
+      description_html: "<p></p><div></div>",
+      attributes: [],
+    };
+    const r = scoreProduct(markupOnly, null);
+    // ni présence ni palier de longueur (texte réel vide) ni attribut → 0.
+    expect(r.scores.find((s) => s.dimension === "intent_coverage")?.value).toBe(
+      0,
+    );
+  });
+
   it("identité et intention sont élevées sur un produit riche", () => {
     expect(byDim.get("identity_clarity")?.value ?? 0).toBeGreaterThanOrEqual(
       80,

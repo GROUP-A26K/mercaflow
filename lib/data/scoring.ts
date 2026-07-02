@@ -14,6 +14,11 @@ import type {
 const PRODUCTS_PAGE_SIZE = 500;
 /** Pagination des attributs (l'API REST Supabase plafonne à 1000 lignes/req). */
 const ATTRIBUTES_PAGE_SIZE = 1000;
+/**
+ * Nb d'`owner_id` par filtre `.in()` : PostgREST envoie le filtre dans l'URL (~8 Ko max) ;
+ * un UUID ≈ 36 car. → on borne à 100 ids/requête (~3,6 Ko) pour ne pas dépasser la limite.
+ */
+const ATTR_OWNER_BATCH = 100;
 
 /** Entrée de scoring d'un produit : la forme pour le scorer + les ids pour la persistance. */
 export interface ProductScoringRow {
@@ -112,8 +117,8 @@ async function readProductAttributes(
 ): Promise<Map<string, ScoringProduct["attributes"]>> {
   const byProduct = new Map<string, ScoringProduct["attributes"]>();
   if (productIds.length === 0) return byProduct;
-  for (let from = 0; from < productIds.length; from += PRODUCTS_PAGE_SIZE) {
-    const slice = productIds.slice(from, from + PRODUCTS_PAGE_SIZE);
+  for (let from = 0; from < productIds.length; from += ATTR_OWNER_BATCH) {
+    const slice = productIds.slice(from, from + ATTR_OWNER_BATCH);
     // Pagination INTERNE : un lot de 500 produits peut porter > 1000 attributs → sans `range`,
     // PostgREST tronque silencieusement (specs/intent calculés sur un set incomplet).
     for (let offset = 0; ; offset += ATTRIBUTES_PAGE_SIZE) {

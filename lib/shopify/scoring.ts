@@ -151,14 +151,10 @@ function scoreIdentity(p: ScoringProduct): DimensionScore {
 function scoreIntent(p: ScoringProduct): DimensionScore {
   const chars = textLen(p.description_html);
   const attrCount = p.attributes.length;
-  const descPts = p.description_html
-    ? chars >= 300
-      ? 40
-      : chars >= 100
-        ? 25
-        : 10
-    : 0;
-  const presencePts = p.description_html ? 30 : 0;
+  // Gaté sur le TEXTE réel (chars > 0), pas sur `description_html` non-null : une description
+  // purement markup (`<p></p>`) ne mérite ni la présence ni le palier de longueur.
+  const descPts = chars >= 300 ? 40 : chars >= 100 ? 25 : chars > 0 ? 10 : 0;
+  const presencePts = chars > 0 ? 30 : 0;
   const attrPts = attrCount >= 5 ? 30 : attrCount >= 1 ? 15 : 0;
   return {
     dimension: "intent_coverage",

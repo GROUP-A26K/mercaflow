@@ -11,39 +11,36 @@ import type { DiscoverabilitySignal } from "@/lib/shopify/scoring";
 // et le HTML d'un thème est bruité. Le fetch est best-effort (null si échec → dim. 1 data-gap).
 
 const JSONLD_SCRIPT =
-  /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  // `type` optionnellement (non-)quoté + éventuels paramètres MIME (`; charset=…`) : on ancre
+  // sur `application/ld+json` sans exiger de guillemet fermant juste après.
+  /<script\b[^>]*\btype\s*=\s*["']?application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi;
+
+// `@type` Product : jeton court `Product` OU IRI complet `https://schema.org/Product`,
+// en chaîne ou dans un tableau (`["Product", …]`), valides schema.org.
+const PRODUCT_TYPE =
+  /["']@type["']\s*:\s*(?:["'](?:https?:\/\/schema\.org\/)?Product["']|\[[^\]]*["'](?:https?:\/\/schema\.org\/)?Product["'][^\]]*\])/;
 
 /** Vrai si un bloc JSON-LD déclare un `@type` Product (schema.org), même imbriqué (@graph). */
 function hasProductJsonLd(html: string): boolean {
   for (const match of html.matchAll(JSONLD_SCRIPT)) {
-    const block = match[1];
-    // Robuste au JSON multiligne / @graph ET au `@type` déclaré en TABLEAU
-    // (`"@type":["Product","..."]`, valide schema.org) autant qu'en chaîne.
-    if (
-      /["']@type["']\s*:\s*(?:["']Product["']|\[[^\]]*["']Product["'][^\]]*\])/.test(
-        block,
-      )
-    ) {
-      return true;
-    }
+    if (PRODUCT_TYPE.test(match[1])) return true;
   }
   return false;
 }
 
 function hasOpenGraph(html: string): boolean {
-  return /<meta[^>]+property=["']og:(?:title|type)["']/i.test(html);
+  return /<meta[^>]+property\s*=\s*["']?og:(?:title|type)/i.test(html);
 }
 
 const META_TAG = /<meta\b[^>]*>/gi;
+// Attribut quoté OU non quoté (`name=robots`, `content=noindex`).
+const NAME_ATTR = /\bname\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>]+))/i;
+const CONTENT_ATTR = /\bcontent\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>]+))/i;
 
-/** Valeur d'un attribut dans une balise (ordre des attributs indifférent). */
+/** Valeur d'un attribut dans une balise (ordre indifférent, guillemets optionnels). */
 function tagAttr(tag: string, attr: "name" | "content"): string | null {
-  const m = tag.match(
-    attr === "name"
-      ? /\bname=["']([^"']*)["']/i
-      : /\bcontent=["']([^"']*)["']/i,
-  );
-  return m ? m[1] : null;
+  const m = tag.match(attr === "name" ? NAME_ATTR : CONTENT_ATTR);
+  return m ? (m[2] ?? m[3] ?? m[4] ?? null) : null;
 }
 
 function isIndexable(html: string): boolean {
