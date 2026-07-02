@@ -86,7 +86,8 @@ export async function drainAuditJobs(
   // si le job a été repris entre-temps, un `LostLeaseError` sur n'importe quel appel doit se
   // traduire par un arrêt propre, jamais par une 500 bruyante côté route.
   try {
-    if (!claimed.connectionId) {
+    const connectionId = claimed.connectionId;
+    if (!connectionId) {
       await failJob({
         id: claimed.id,
         expectedAttempts,
@@ -101,25 +102,28 @@ export async function drainAuditJobs(
       };
     }
 
-    const connection = await getConnectionById(claimed.connectionId);
-    if (!connection || connection.status !== "active") {
-      await failJob({
-        id: claimed.id,
-        expectedAttempts,
-        error: `connexion ${claimed.connectionId} introuvable ou inactive`,
-      });
-      return {
-        claimed: true,
-        jobId: claimed.id,
-        processed,
-        failed,
-        done: false,
-      };
-    }
-
     const start = now();
 
     for (;;) {
+      // Re-valider la connexion À CHAQUE page (pas seulement au démarrage) : une désinstallation
+      // (`app/uninstalled` → révocation) pendant le drain doit stopper l'audit — inutile de
+      // continuer à auditer une boutique désinstallée. Lecture indexée, négligeable vs les fetch.
+      const connection = await getConnectionById(connectionId);
+      if (!connection || connection.status !== "active") {
+        await failJob({
+          id: claimed.id,
+          expectedAttempts,
+          error: `connexion ${connectionId} introuvable ou inactive`,
+        });
+        return {
+          claimed: true,
+          jobId: claimed.id,
+          processed,
+          failed,
+          done: false,
+        };
+      }
+
       const batch = await runAuditBatch(connection, {
         afterCursor: cursor,
         pageSize,

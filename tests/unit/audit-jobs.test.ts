@@ -230,6 +230,32 @@ describe("drainAuditJobs", () => {
     expect(runBatchSpy).not.toHaveBeenCalled();
   });
 
+  it("stoppe si la connexion est révoquée EN COURS de drain (re-validation par page)", async () => {
+    claimSpy.mockResolvedValue(job({ cursor: null, processed: 0, failed: 0 }));
+    // Page 1 : connexion active → auditée ; page 2 : connexion révoquée → on s'arrête.
+    getConnSpy
+      .mockResolvedValueOnce(activeConnection)
+      .mockResolvedValue({ ...activeConnection, status: "revoked" });
+    runBatchSpy.mockResolvedValue({
+      processed: 2,
+      failed: 0,
+      nextCursor: "p2",
+      done: false,
+    });
+
+    const result = await drainAuditJobs({ timeBudgetMs: 50_000 });
+
+    // Une seule page auditée avant la détection de révocation.
+    expect(runBatchSpy).toHaveBeenCalledTimes(1);
+    expect(failSpy).toHaveBeenCalledWith({
+      id: "job-1",
+      expectedAttempts: 1,
+      error: expect.stringContaining("conn-1"),
+    });
+    expect(completeSpy).not.toHaveBeenCalled();
+    expect(result.done).toBe(false);
+  });
+
   it("s'arrête proprement (lostLease) si un checkpoint révèle un job repris par un autre worker", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     claimSpy.mockResolvedValue(job({ cursor: null, processed: 0, failed: 0 }));
