@@ -101,6 +101,27 @@ describe("scoreProduct", () => {
     expect(byDim.get("consistency_freshness")?.value).toBe(50);
   });
 
+  it("cohérence : stock 0 fait foi même si availability='available'", () => {
+    const zeroStock: ScoringProduct = {
+      ...fullProduct,
+      variants: [
+        {
+          shopify_variant_id: "gid://shopify/ProductVariant/7",
+          gtin: "0123456789012",
+          price: 10,
+          availability: "available",
+          inventory_qty: 0,
+        },
+      ],
+    };
+    const r = scoreProduct(zeroStock, null);
+    // stock ≤ 0 → non confirmé disponible (cohérent avec variantEligibility.unavailable).
+    expect(
+      r.scores.find((s) => s.dimension === "consistency_freshness")?.value,
+    ).toBe(0);
+    expect(r.eligibility[0].issues.unavailable).toBe(true);
+  });
+
   it("cohérence : une dispo INCONNUE ne compte pas comme disponible", () => {
     const unknownAvail: ScoringProduct = {
       ...fullProduct,

@@ -17,8 +17,15 @@ const JSONLD_SCRIPT =
 function hasProductJsonLd(html: string): boolean {
   for (const match of html.matchAll(JSONLD_SCRIPT)) {
     const block = match[1];
-    // Rapide et robuste au JSON multiligne / @graph : on cherche un "@type":"Product".
-    if (/["']@type["']\s*:\s*["']Product["']/.test(block)) return true;
+    // Robuste au JSON multiligne / @graph ET au `@type` déclaré en TABLEAU
+    // (`"@type":["Product","..."]`, valide schema.org) autant qu'en chaîne.
+    if (
+      /["']@type["']\s*:\s*(?:["']Product["']|\[[^\]]*["']Product["'][^\]]*\])/.test(
+        block,
+      )
+    ) {
+      return true;
+    }
   }
   return false;
 }

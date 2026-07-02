@@ -42,6 +42,11 @@ describe("parseDiscoverability", () => {
     const html = `<script type="application/ld+json">{"@type":"BreadcrumbList"}</script>`;
     expect(parseDiscoverability(html).jsonLdProduct).toBe(false);
   });
+
+  it("détecte un @type en TABLEAU contenant Product", () => {
+    const html = `<script type="application/ld+json">{"@type":["Product","Clothing"]}</script>`;
+    expect(parseDiscoverability(html).jsonLdProduct).toBe(true);
+  });
 });
 
 describe("fetchDiscoverability", () => {

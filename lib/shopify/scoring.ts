@@ -89,11 +89,13 @@ function hasGtin(variant: ScoringVariant): boolean {
 }
 
 /**
- * Disponibilité CONFIRMÉE (signal positif) : `available` explicite, ou stock connu > 0.
- * Une dispo inconnue (les deux champs null, fréquent sur une ligne webhook sans merge bulk)
- * n'est PAS confirmée → ne compte pas comme « clean » pour la cohérence (ne pas la surévaluer).
+ * Disponibilité CONFIRMÉE (signal positif) : le stock CONNU fait foi (cohérent avec
+ * `isUnavailable`) — un stock ≤ 0 n'est jamais « confirmé disponible », même si `availability`
+ * dit `available`. Sinon `available` explicite, ou stock connu > 0. Une dispo inconnue (les
+ * deux champs null) n'est PAS confirmée → ne compte pas comme « clean » (ne pas surévaluer).
  */
 function isConfirmedAvailable(variant: ScoringVariant): boolean {
+  if (variant.inventory_qty != null && variant.inventory_qty <= 0) return false;
   if (variant.availability === "available") return true;
   return variant.inventory_qty != null && variant.inventory_qty > 0;
 }
@@ -115,7 +117,15 @@ export function variantEligibility(
 // --- Dimensions ----------------------------------------------------------------------------
 
 const clamp = (n: number): number => Math.max(0, Math.min(100, n));
-const textLen = (html: string | null): number => (html ? html.length : 0);
+
+/** Longueur du TEXTE (balises HTML retirées) : mesure le contenu réel, pas le markup. */
+const textLen = (html: string | null): number =>
+  html
+    ? html
+        .replace(/<[^>]*>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim().length
+    : 0;
 
 function scoreIdentity(p: ScoringProduct): DimensionScore {
   const hasTitle = !!p.title;

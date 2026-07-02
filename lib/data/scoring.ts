@@ -230,7 +230,26 @@ export async function persistProductAudit(
       }
     }
   } catch (error) {
-    await supabase.from("audits").delete().eq("id", auditId);
+    // Rollback best-effort : ne JAMAIS masquer l'erreur d'origine si la suppression échoue.
+    // Si le delete rate (réseau), on journalise (snapshot partiel possible) et on relance
+    // l'erreur initiale — un re-run (idempotent au sens append-only) ré-audite le produit.
+    try {
+      const { error: rollbackError } = await supabase
+        .from("audits")
+        .delete()
+        .eq("id", auditId);
+      if (rollbackError) {
+        console.error(
+          `Rollback de l'audit ${auditId} échoué (snapshot partiel possible) : ${rollbackError.message}`,
+        );
+      }
+    } catch (rollbackThrow) {
+      const message =
+        rollbackThrow instanceof Error
+          ? rollbackThrow.message
+          : String(rollbackThrow);
+      console.error(`Rollback de l'audit ${auditId} a levé : ${message}`);
+    }
     throw error;
   }
 }
