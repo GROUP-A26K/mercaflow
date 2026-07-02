@@ -1,0 +1,25 @@
+lib/data/scoring.ts
+  s_418a6894af41f9::t_38191900e63bc0 122
+tests/unit/shopify-scoring.test.ts
+  s_418a6894af41f9::t_6d83346da62d50 125-140
+  s_418a6894af41f9::t_03824d98859b90 122-124
+  s_418a6894af41f9::t_90a317266583c4 121
+lib/shopify/scoring.ts
+  s_418a6894af41f9::t_b9e6411f7cb3a8 98-100
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "90858c74986c35c6a89641adcd7b6ca5283fd0c5",
+  "prompts": {},
+  "sessions": {
+    "s_418a6894af41f9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ea6c9e11-6196-4dca-b5cd-75422e94d2af",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
