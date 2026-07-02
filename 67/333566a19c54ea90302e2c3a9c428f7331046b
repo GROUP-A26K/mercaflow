@@ -1,0 +1,19 @@
+supabase/migrations/0006_persist_audit_rpc.sql
+  s_9bc3a96a9ba461::t_bbd782646fc82a 34-46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "67333566a19c54ea90302e2c3a9c428f7331046b",
+  "prompts": {},
+  "sessions": {
+    "s_9bc3a96a9ba461": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "374fbf86-6e92-4d30-b3b4-bf8b20ece4d5",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
