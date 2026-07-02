@@ -25,6 +25,7 @@ import {
 } from "@/lib/shopify/bulk";
 import { streamJsonlNodes } from "@/lib/shopify/jsonl";
 import { toRawRecord, type RawRecordInsert } from "@/lib/shopify/raw-record";
+import { ensureIncrementalWebhooks } from "@/lib/shopify/webhook-subscriptions";
 
 // Orchestration de l'ingestion bulk (MER-26).
 // Flux : démarrage (abonnement webhook → garde 1-bulk/shop → bulkOperationRunQuery), puis
@@ -85,16 +86,28 @@ export async function ensureBulkFinishWebhook(
 export interface StartIngestionParams {
   client: AdminGraphQLClient;
   callbackUrl: string;
+  /**
+   * URL du endpoint des webhooks incrémentaux (MER-27). Si fournie, on abonne aussi les
+   * topics products/inventory/uninstalled → le graph reste frais sans re-scan complet.
+   */
+  incrementalCallbackUrl?: string;
 }
 
 /**
- * Démarre l'import initial du catalogue : abonne le webhook, vérifie qu'aucune bulk query
- * n'est en cours (contrainte Shopify « 1 bulk query / shop »), puis lance la bulk query.
+ * Démarre l'import initial du catalogue : abonne les webhooks (finish bulk + incrémentaux),
+ * vérifie qu'aucune bulk query n'est en cours (contrainte Shopify « 1 bulk query / shop »),
+ * puis lance la bulk query.
  */
 export async function startCatalogIngestion(
   params: StartIngestionParams,
 ): Promise<BulkOperationRef> {
   await ensureBulkFinishWebhook(params.client, params.callbackUrl);
+  if (params.incrementalCallbackUrl) {
+    await ensureIncrementalWebhooks(
+      params.client,
+      params.incrementalCallbackUrl,
+    );
+  }
 
   const current = parseCurrentBulkOperation(
     await params.client.query(CURRENT_BULK_OPERATION_QUERY),

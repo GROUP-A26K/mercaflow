@@ -14,6 +14,7 @@ import {
   BulkAlreadyRunningError,
   startCatalogIngestion,
 } from "@/lib/shopify/ingestion";
+import { INCREMENTAL_WEBHOOK_PATH } from "@/lib/shopify/webhook-subscriptions";
 
 export const dynamic = "force-dynamic";
 
@@ -69,6 +70,7 @@ export async function POST(req: NextRequest) {
   }
 
   const callbackUrl = `${base}${BULK_FINISH_WEBHOOK_PATH}`;
+  const incrementalCallbackUrl = `${base}${INCREMENTAL_WEBHOOK_PATH}`;
 
   try {
     // Dans le try : `connectionAccessToken` lève si le token est révoqué/malformé
@@ -79,7 +81,11 @@ export async function POST(req: NextRequest) {
       accessToken: connectionAccessToken(connection),
       apiVersion: config.apiVersion,
     });
-    const op = await startCatalogIngestion({ client, callbackUrl });
+    const op = await startCatalogIngestion({
+      client,
+      callbackUrl,
+      incrementalCallbackUrl,
+    });
     // Tracer l'op (id → connexion/org) pour corréler le futur webhook finish (anti cross-tenant).
     // Si ce write échoue, on renvoie 502 : la bulk tourne mais re-déclencher après sa fin
     // relancera une bulk (catalogue COMPLET) → ingestion idempotente, pas de perte de données.

@@ -14,7 +14,8 @@ export interface RawRecordInsert {
   connection_id: string;
   resource_type: string;
   external_id: string;
-  payload: BulkNode;
+  // jsonb : nœud bulk (GID en `id`) OU payload webhook REST (MER-27, id numérique).
+  payload: BulkNode | Record<string, unknown>;
   content_hash: string;
 }
 
