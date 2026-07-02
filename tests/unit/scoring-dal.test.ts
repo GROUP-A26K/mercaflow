@@ -3,15 +3,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 // DAL scoring (MER-29) : lecture des entités canoniques → entrée du scorer, et écriture
-// APPEND-ONLY des snapshots (audits → scores → variant_eligibility). On mocke le client
-// service-role avec un query-builder chaînable dont chaque table renvoie un résultat
-// configurable, et on capture les payloads d'`insert` pour vérifier l'append-only + le rollup.
+// APPEND-ONLY des snapshots. La persistance passe par la RPC transactionnelle
+// `persist_product_audit` (MER-57) : audits + scores + variant_eligibility en UNE
+// transaction Postgres (tout-ou-rien). On mocke `from` (query-builder chaînable pour la
+// lecture) ET `rpc` (capture des arguments + résultat configurable).
 
-const { fromSpy, state } = vi.hoisted(() => {
+const { fromSpy, rpcSpy, state } = vi.hoisted(() => {
   const state: {
     results: Record<string, { data?: unknown; error: unknown }>;
     inserts: Record<string, unknown[]>;
-  } = { results: {}, inserts: {} };
+    rpcCalls: { name: string; args: unknown }[];
+    rpcResult: { data?: unknown; error: unknown };
+  } = { results: {}, inserts: {}, rpcCalls: [], rpcResult: { error: null } };
 
   const fromSpy = vi.fn((table: string) => {
     const result = state.results[table] ?? { data: null, error: null };
@@ -26,18 +29,22 @@ const { fromSpy, state } = vi.hoisted(() => {
         (state.inserts[table] ??= []).push(payload);
         return builder;
       }),
-      // Suppression compensatoire de l'audit sur échec d'insert (append-only sans transaction).
-      delete: vi.fn(() => builder),
       then: (onF: (v: unknown) => unknown, onR?: (e: unknown) => unknown) =>
         Promise.resolve(result).then(onF, onR),
     };
     return builder;
   });
-  return { fromSpy, state };
+
+  const rpcSpy = vi.fn((name: string, args: unknown) => {
+    state.rpcCalls.push({ name, args });
+    return Promise.resolve(state.rpcResult);
+  });
+
+  return { fromSpy, rpcSpy, state };
 });
 
 vi.mock("@/lib/supabase/admin", () => ({
-  createAdminClient: () => ({ from: fromSpy }),
+  createAdminClient: () => ({ from: fromSpy, rpc: rpcSpy }),
 }));
 
 import {
@@ -49,7 +56,10 @@ import type { DimensionScore, VariantEligibility } from "@/lib/shopify/scoring";
 beforeEach(() => {
   state.results = {};
   state.inserts = {};
+  state.rpcCalls = [];
+  state.rpcResult = { error: null };
   fromSpy.mockClear();
+  rpcSpy.mockClear();
 });
 
 describe("readConnectionScoringInput", () => {
@@ -170,13 +180,7 @@ const eligibility: VariantEligibility[] = [
 ];
 
 describe("persistProductAudit", () => {
-  beforeEach(() => {
-    state.results.audits = { data: { id: "audit-1" }, error: null };
-    state.results.scores = { error: null };
-    state.results.variant_eligibility = { error: null };
-  });
-
-  it("écrit un audit puis ses scores et l'éligibilité variant (append-only, audit_id propagé)", async () => {
+  it("délègue à la RPC transactionnelle persist_product_audit (scores + éligibilité résolue)", async () => {
     await persistProductAudit({
       orgId: "org_1",
       productId: "prod-1",
@@ -187,45 +191,46 @@ describe("persistProductAudit", () => {
       variantIdByGid: { "gid://shopify/ProductVariant/1": "var-1" },
     });
 
-    expect(state.inserts.audits?.[0]).toEqual({
-      org_id: "org_1",
-      product_id: "prod-1",
-      model: "pus-v1",
-      context: { scorer: "pus-v1" },
+    // Un seul appel RPC : atomicité tout-ou-rien côté Postgres (plus de 3 INSERT séparés).
+    expect(state.rpcCalls).toHaveLength(1);
+    expect(state.rpcCalls[0]).toEqual({
+      name: "persist_product_audit",
+      args: {
+        p_org_id: "org_1",
+        p_product_id: "prod-1",
+        p_model: "pus-v1",
+        p_context: { scorer: "pus-v1" },
+        p_scores: [
+          {
+            dimension: "identity_clarity",
+            value: 80,
+            evidence: { has_title: true },
+          },
+          {
+            dimension: "identifiers",
+            value: null,
+            evidence: { data_gap: true },
+          },
+        ],
+        p_eligibility: [
+          {
+            variant_id: "var-1",
+            issues: {
+              gtin_missing: false,
+              price_missing: false,
+              unavailable: false,
+            },
+          },
+        ],
+      },
     });
-    expect(state.inserts.scores?.[0]).toEqual([
-      {
-        org_id: "org_1",
-        audit_id: "audit-1",
-        product_id: "prod-1",
-        dimension: "identity_clarity",
-        value: 80,
-        evidence: { has_title: true },
-      },
-      {
-        org_id: "org_1",
-        audit_id: "audit-1",
-        product_id: "prod-1",
-        dimension: "identifiers",
-        value: null,
-        evidence: { data_gap: true },
-      },
-    ]);
-    expect(state.inserts.variant_eligibility?.[0]).toEqual([
-      {
-        org_id: "org_1",
-        audit_id: "audit-1",
-        variant_id: "var-1",
-        issues: {
-          gtin_missing: false,
-          price_missing: false,
-          unavailable: false,
-        },
-      },
-    ]);
+    // Aucune écriture directe par table : tout passe par la RPC.
+    expect(state.inserts.audits).toBeUndefined();
+    expect(state.inserts.scores).toBeUndefined();
+    expect(state.inserts.variant_eligibility).toBeUndefined();
   });
 
-  it("ignore les variants dont le GID est absent du mapping (pas d'insert éligibilité)", async () => {
+  it("ignore les variants dont le GID est absent du mapping (éligibilité filtrée)", async () => {
     await persistProductAudit({
       orgId: "org_1",
       productId: "prod-1",
@@ -236,10 +241,11 @@ describe("persistProductAudit", () => {
       variantIdByGid: {}, // aucun mapping → la ligne d'éligibilité est filtrée
     });
 
-    expect(state.inserts.variant_eligibility).toBeUndefined();
+    const args = state.rpcCalls[0]?.args as { p_eligibility: unknown[] };
+    expect(args.p_eligibility).toEqual([]);
   });
 
-  it("n'insère pas d'éligibilité si le produit n'a aucun variant", async () => {
+  it("passe une éligibilité vide si le produit n'a aucun variant", async () => {
     await persistProductAudit({
       orgId: "org_1",
       productId: "prod-1",
@@ -250,12 +256,16 @@ describe("persistProductAudit", () => {
       variantIdByGid: {},
     });
 
-    expect(state.inserts.variant_eligibility).toBeUndefined();
-    expect(state.inserts.scores).toHaveLength(1);
+    const args = state.rpcCalls[0]?.args as {
+      p_eligibility: unknown[];
+      p_scores: unknown[];
+    };
+    expect(args.p_eligibility).toEqual([]);
+    expect(args.p_scores).toHaveLength(2);
   });
 
-  it("propage l'échec d'insertion de l'audit sans écrire les scores", async () => {
-    state.results.audits = { data: null, error: { message: "audit boom" } };
+  it("propage l'échec de la RPC (rollback complet côté Postgres)", async () => {
+    state.rpcResult = { error: { message: "rpc boom" } };
 
     await expect(
       persistProductAudit({
@@ -267,23 +277,6 @@ describe("persistProductAudit", () => {
         eligibility,
         variantIdByGid: { "gid://shopify/ProductVariant/1": "var-1" },
       }),
-    ).rejects.toThrow(/audit boom/);
-    expect(state.inserts.scores).toBeUndefined();
-  });
-
-  it("propage l'échec d'insertion des scores", async () => {
-    state.results.scores = { error: { message: "scores boom" } };
-
-    await expect(
-      persistProductAudit({
-        orgId: "org_1",
-        productId: "prod-1",
-        model: "pus-v1",
-        context: {},
-        scores,
-        eligibility,
-        variantIdByGid: { "gid://shopify/ProductVariant/1": "var-1" },
-      }),
-    ).rejects.toThrow(/scores boom/);
+    ).rejects.toThrow(/rpc boom/);
   });
 });
