@@ -1,9 +1,11 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { getCurrentUser } from "@/lib/data/auth";
+import { getCurrentUser, requireOrg } from "@/lib/data/auth";
+import { listActiveConnectionsForOrg } from "@/lib/data/shopify-connections";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 import { ConnectShopifyCard } from "./_components/connect-shopify-card";
 import { DashboardGreeting } from "./_components/dashboard-greeting";
+import { IngestCatalogCard } from "./_components/ingest-catalog-card";
 import { SignOutButton } from "./_components/sign-out-button";
 
 // Page privée → exclue de l'indexation.
@@ -20,7 +22,13 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{ shopify?: string }>;
 }) {
-  const [user, params] = await Promise.all([getCurrentUser(), searchParams]);
+  // `requireOrg` (mémoïsé, déjà appelé par le layout (app)) garantit l'org active.
+  const { orgId } = await requireOrg();
+  const [user, connections, params] = await Promise.all([
+    getCurrentUser(),
+    listActiveConnectionsForOrg(orgId),
+    searchParams,
+  ]);
   const justConnected = params.shopify === "connected";
 
   return (
@@ -41,6 +49,7 @@ export default async function DashboardPage({
         ) : null}
 
         <ConnectShopifyCard />
+        <IngestCatalogCard connections={connections} />
       </div>
     </main>
   );

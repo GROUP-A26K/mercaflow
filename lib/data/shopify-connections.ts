@@ -121,6 +121,30 @@ export async function getActiveConnectionForOrg(
 }
 
 /**
+ * Toutes les connexions ACTIVES d'une organisation (MER-55, point d'entrée UI d'ingestion).
+ * Contrairement à `getActiveConnectionForOrg`, ne lève pas si l'org a plusieurs boutiques :
+ * l'UI affiche un déclencheur d'import par boutique (chacun ciblant `?shop=<domaine>`).
+ * Service-role : l'`orgId` provient de la session Clerk (`requireOrg`), filtré explicitement.
+ */
+export async function listActiveConnectionsForOrg(
+  orgId: string,
+): Promise<ShopifyConnection[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("shopify_connections")
+    .select(CONNECTION_COLUMNS)
+    .eq("org_id", orgId)
+    .eq("status", "active")
+    .order("installed_at", { ascending: false });
+  if (error) {
+    throw new Error(
+      `Lecture des connexions Shopify de l'organisation échouée : ${error.message}`,
+    );
+  }
+  return ((data ?? []) as ConnectionRow[]).map(mapConnection);
+}
+
+/**
  * Toutes les connexions ACTIVES d'un domaine de boutique (MER-27, fan-out webhooks).
  * Un webhook Shopify ne porte pas d'org : on rafraîchit chaque connexion active de ce
  * domaine (un même domaine peut être connecté par plusieurs orgs — cf. ADR tenancy).
