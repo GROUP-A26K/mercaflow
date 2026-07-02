@@ -26,9 +26,12 @@ export async function readConnectionRawRecords(
   for (let from = 0; ; from += RAW_RECORDS_PAGE_SIZE) {
     const { data, error } = await supabase
       .from("raw_records")
-      .select("external_id, resource_type, payload, fetched_at")
+      .select("id, external_id, resource_type, payload, fetched_at")
       .eq("connection_id", connectionId)
+      // Ordre TOTAL stable (fetched_at seul n'est pas unique → à cheval sur deux pages, des
+      // lignes de même fetched_at pourraient être sautées/dupliquées). `id` départage.
       .order("fetched_at", { ascending: true })
+      .order("id", { ascending: true })
       .range(from, from + RAW_RECORDS_PAGE_SIZE - 1);
     if (error) {
       throw new Error(`Lecture des raw_records échouée : ${error.message}`);
@@ -111,7 +114,14 @@ export async function upsertNormalizedProduct(
     );
     for (const variant of normalized.variants) {
       const variantId = idByVariantGid.get(variant.shopify_variant_id);
-      if (!variantId) continue;
+      if (!variantId) {
+        // État inattendu (l'upsert aurait dû renvoyer chaque ligne) : échouer plutôt que
+        // de persister un variant sans ses attributs en silence. L'isolation par produit
+        // (orchestrateur) borne l'impact et le re-run idempotent réparera.
+        throw new Error(
+          `Id de variant introuvable après upsert (${variant.shopify_variant_id})`,
+        );
+      }
       for (const attr of variant.attributes) {
         attributeRows.push({
           org_id: orgId,
@@ -156,7 +166,8 @@ export async function getGtinCoverageForConnection(
     .from("variants")
     .select("id, products!inner(connection_id)", { count: "exact", head: true })
     .eq("products.connection_id", connectionId)
-    // Cohérent avec `gtinCoverage` (pur) : un GTIN présent = non-null ET non-vide.
+    // `gtin` est déjà trimé à la normalisation (vide/whitespace → null) : non-null suffit,
+    // le `neq ''` reste une ceinture-bretelles cohérente avec `gtinCoverage`.
     .not("gtin", "is", null)
     .neq("gtin", "");
 
