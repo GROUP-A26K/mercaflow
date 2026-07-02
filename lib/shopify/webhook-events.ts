@@ -33,12 +33,19 @@ interface IngestTopic {
   externalId: (payload: WebhookPayload) => string;
 }
 
+/** Identifiant exploitable : nombre, ou chaîne NON vide (une chaîne vide donnerait un GID nu). */
+function isUsableId(value: unknown): value is number | string {
+  return (
+    typeof value === "number" || (typeof value === "string" && value !== "")
+  );
+}
+
 /** GID d'un produit : `admin_graphql_api_id` si présent, sinon composé depuis l'id REST. */
 function productGid(payload: WebhookPayload): string {
   const gid = payload.admin_graphql_api_id;
   if (typeof gid === "string" && gid.length > 0) return gid;
   const id = payload.id;
-  if (typeof id === "number" || typeof id === "string") {
+  if (isUsableId(id)) {
     return `gid://shopify/Product/${id}`;
   }
   throw new UnmappableWebhookPayloadError(
@@ -57,9 +64,7 @@ function inventoryLevelKey(payload: WebhookPayload): string {
   if (typeof gid === "string" && gid.length > 0) return gid;
   const item = payload.inventory_item_id;
   const location = payload.location_id;
-  const scalar = (v: unknown): v is number | string =>
-    typeof v === "number" || typeof v === "string";
-  if (scalar(item) && scalar(location)) {
+  if (isUsableId(item) && isUsableId(location)) {
     return `gid://shopify/InventoryLevel/${location}?inventory_item_id=${item}`;
   }
   throw new UnmappableWebhookPayloadError(
@@ -126,19 +131,21 @@ export function payloadMatchesTopic(
 ): boolean {
   // Un objet boutique (corps de `app/uninstalled`) n'est jamais un événement d'ingestion.
   if (typeof payload.myshopify_domain === "string") return false;
-  const scalar = (v: unknown): v is number | string =>
-    typeof v === "number" || typeof v === "string";
   switch (topic) {
     case "products/create":
     case "products/update":
+      // `gid://shopify/Product/<n>` : la présence d'un id après le préfixe est requise.
       return (
         typeof payload.admin_graphql_api_id === "string" &&
+        payload.admin_graphql_api_id.length > "gid://shopify/Product/".length &&
         payload.admin_graphql_api_id.startsWith("gid://shopify/Product/")
       );
     case "products/delete":
-      return scalar(payload.id);
+      return isUsableId(payload.id);
     case "inventory_levels/update":
-      return scalar(payload.inventory_item_id) && scalar(payload.location_id);
+      return (
+        isUsableId(payload.inventory_item_id) && isUsableId(payload.location_id)
+      );
     default:
       return false;
   }

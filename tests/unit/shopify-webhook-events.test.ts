@@ -95,6 +95,21 @@ describe("payloadMatchesTopic", () => {
     );
   });
 
+  it("rejette un id vide (chaîne) → pas de GID nu", () => {
+    expect(payloadMatchesTopic("products/delete", { id: "" })).toBe(false);
+    expect(
+      payloadMatchesTopic("inventory_levels/update", {
+        inventory_item_id: "",
+        location_id: 2,
+      }),
+    ).toBe(false);
+    expect(
+      payloadMatchesTopic("products/update", {
+        admin_graphql_api_id: "gid://shopify/Product/",
+      }),
+    ).toBe(false);
+  });
+
   it("rejette un produit create/update sans GID Product", () => {
     expect(payloadMatchesTopic("products/update", { id: 123 })).toBe(false);
     expect(
