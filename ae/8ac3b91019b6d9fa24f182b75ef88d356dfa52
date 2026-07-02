@@ -1,0 +1,24 @@
+tests/unit/scoring-dal.test.ts
+  s_9bc3a96a9ba461::t_3dad79337e99a5 6-9,11,15-17,37-43,47,59-60,62,183,194-224,226-230,233,244-245,248,259-264,267-268,280
+lib/data/scoring.ts
+  s_9bc3a96a9ba461::t_8a4e21e88a4d4f 168-180,182-186,193-204,206-216,218
+supabase/migrations/0006_persist_audit_rpc.sql
+  s_9bc3a96a9ba461::t_7d4612664e71cc 1-62,68
+  s_9bc3a96a9ba461::t_1dc4c8b2be7654 63-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "ae8ac3b91019b6d9fa24f182b75ef88d356dfa52",
+  "prompts": {},
+  "sessions": {
+    "s_9bc3a96a9ba461": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "374fbf86-6e92-4d30-b3b4-bf8b20ece4d5",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
