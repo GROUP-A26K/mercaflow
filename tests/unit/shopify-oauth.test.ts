@@ -7,6 +7,7 @@ vi.mock("server-only", () => ({}));
 import {
   buildInstallUrl,
   isValidShopDomain,
+  resolvePublicOrigin,
   verifyShopifyHmac,
 } from "@/lib/shopify/oauth";
 
@@ -26,6 +27,45 @@ describe("isValidShopDomain", () => {
     undefined,
   ])("rejette %s", (value) => {
     expect(isValidShopDomain(value)).toBe(false);
+  });
+});
+
+describe("resolvePublicOrigin", () => {
+  const fallback = { protocol: "https:", host: "localhost:3000" };
+
+  it("utilise X-Forwarded-Host + X-Forwarded-Proto derrière un tunnel/proxy", () => {
+    const headers = new Headers({
+      host: "shopify-dev.mercaflow.ai",
+      "x-forwarded-host": "shopify-dev.mercaflow.ai",
+      "x-forwarded-proto": "https",
+    });
+    // ↳ ne doit PAS retomber sur le socket local (localhost:3000).
+    expect(resolvePublicOrigin(headers, fallback)).toBe(
+      "https://shopify-dev.mercaflow.ai",
+    );
+  });
+
+  it("retombe sur l'en-tête Host quand X-Forwarded-Host est absent", () => {
+    const headers = new Headers({ host: "app.mercaflow.ai" });
+    expect(resolvePublicOrigin(headers, fallback)).toBe(
+      "https://app.mercaflow.ai",
+    );
+  });
+
+  it("utilise le protocole du fallback quand X-Forwarded-Proto est absent", () => {
+    const headers = new Headers({ host: "app.mercaflow.ai" });
+    expect(
+      resolvePublicOrigin(headers, {
+        protocol: "http:",
+        host: "localhost:3000",
+      }),
+    ).toBe("http://app.mercaflow.ai");
+  });
+
+  it("retombe entièrement sur le fallback sans en-têtes", () => {
+    expect(resolvePublicOrigin(new Headers(), fallback)).toBe(
+      "https://localhost:3000",
+    );
   });
 });
 

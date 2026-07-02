@@ -5,7 +5,11 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { SHOPIFY_REDIRECT_PATH, shopifyConfig } from "@/lib/shopify/config";
 import { encryptToken } from "@/lib/shopify/crypto";
-import { buildInstallUrl, isValidShopDomain } from "@/lib/shopify/oauth";
+import {
+  buildInstallUrl,
+  isValidShopDomain,
+  resolvePublicOrigin,
+} from "@/lib/shopify/oauth";
 
 export const dynamic = "force-dynamic";
 
@@ -28,9 +32,17 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Origine publique : derrière le tunnel Cloudflare (dev) / proxy Vercel (prod),
+  // `nextUrl`/`request.url` pointent sur le socket local (`localhost:3000`) → on résout
+  // l'hôte public via les en-têtes de forwarding, pour les redirections ET le redirect_uri.
+  const origin = resolvePublicOrigin(request.headers, {
+    protocol: request.nextUrl.protocol,
+    host: request.nextUrl.host,
+  });
+
   const { orgId } = await auth();
   if (!orgId) {
-    return NextResponse.redirect(new URL("/select-organization", request.url));
+    return NextResponse.redirect(`${origin}/select-organization`);
   }
 
   const shop = request.nextUrl.searchParams.get("shop");
@@ -42,7 +54,7 @@ export async function GET(request: NextRequest) {
   }
 
   const config = shopifyConfig();
-  const redirectUri = `${request.nextUrl.origin}${SHOPIFY_REDIRECT_PATH}`;
+  const redirectUri = `${origin}${SHOPIFY_REDIRECT_PATH}`;
   const nonce = randomBytes(16).toString("hex");
 
   const response = NextResponse.redirect(

@@ -13,6 +13,25 @@ export function isValidShopDomain(
   return typeof shop === "string" && SHOP_DOMAIN_RE.test(shop);
 }
 
+/**
+ * Origine publique de l'app derrière un reverse-proxy / tunnel (Cloudflare, Vercel).
+ * `request.nextUrl.origin` reflète le socket d'écoute (ex. `localhost:3000`) et NON le
+ * `Host` public → on reconstruit l'origine depuis `X-Forwarded-Host`/`Host` (+ proto),
+ * avec repli sur l'origine locale. Sécurité : ces en-têtes sont posés par le proxy de
+ * confiance, et le `redirect_uri` résultant DOIT correspondre à la whitelist Shopify
+ * (qui borne toute manipulation d'hôte).
+ */
+export function resolvePublicOrigin(
+  headers: Headers,
+  fallback: { protocol: string; host: string },
+): string {
+  const proto =
+    headers.get("x-forwarded-proto") ?? fallback.protocol.replace(/:$/, "");
+  const host =
+    headers.get("x-forwarded-host") ?? headers.get("host") ?? fallback.host;
+  return `${proto}://${host}`;
+}
+
 export interface InstallUrlParams {
   shop: string;
   clientId: string;

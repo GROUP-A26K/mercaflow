@@ -2,7 +2,7 @@
 # Usage : `make <cible>` (ex. `make dev`). `make` seul affiche cette aide.
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev build start lint typecheck test test-watch test-e2e check clean reset agents wt cloud
+.PHONY: help install dev build start lint typecheck test test-watch test-e2e check clean reset agents wt cloud tunnel
 
 help: ## Affiche les cibles disponibles
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -47,6 +47,9 @@ wt: ## Crée un worktree isolé : make wt b=feat/JB/MER-XX-slug
 
 cloud: ## Flotte Cursor Cloud Agents : make cloud a='--check' (cf. docs/cloud-agents.md)
 	@infisical run --env=dev -- node scripts/cloud-agents.mjs $(a)
+
+tunnel: ## Tunnel Cloudflare dev → https://shopify-dev.mercaflow.ai (cf. docs/shopify-dev-tunnel.md)
+	cloudflared tunnel --config infra/cloudflared/config.yml run
 
 clean: ## Supprime le cache de build Next
 	rm -rf .next
