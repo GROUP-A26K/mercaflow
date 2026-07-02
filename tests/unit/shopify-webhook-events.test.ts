@@ -4,6 +4,7 @@ vi.mock("server-only", () => ({}));
 
 import {
   classifyWebhookTopic,
+  shopDomainFromUninstallPayload,
   toRawRecordFromWebhook,
   UnmappableWebhookPayloadError,
 } from "@/lib/shopify/webhook-events";
@@ -37,6 +38,22 @@ describe("classifyWebhookTopic", () => {
   it("ignore un topic absent", () => {
     expect(classifyWebhookTopic(null)).toEqual({ kind: "ignore" });
     expect(classifyWebhookTopic(undefined)).toEqual({ kind: "ignore" });
+  });
+});
+
+describe("shopDomainFromUninstallPayload", () => {
+  it("extrait myshopify_domain du corps signé", () => {
+    expect(
+      shopDomainFromUninstallPayload({
+        id: 1,
+        myshopify_domain: "acme.myshopify.com",
+      }),
+    ).toBe("acme.myshopify.com");
+  });
+
+  it("renvoie null si myshopify_domain absent ou non-string", () => {
+    expect(shopDomainFromUninstallPayload({ id: 1 })).toBeNull();
+    expect(shopDomainFromUninstallPayload({ myshopify_domain: 42 })).toBeNull();
   });
 });
 

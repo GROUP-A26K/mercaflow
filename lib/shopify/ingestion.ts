@@ -25,7 +25,10 @@ import {
 } from "@/lib/shopify/bulk";
 import { streamJsonlNodes } from "@/lib/shopify/jsonl";
 import { toRawRecord, type RawRecordInsert } from "@/lib/shopify/raw-record";
-import { ensureIncrementalWebhooks } from "@/lib/shopify/webhook-subscriptions";
+import {
+  ensureIncrementalWebhooks,
+  isDuplicateWebhookError,
+} from "@/lib/shopify/webhook-subscriptions";
 
 // Orchestration de l'ingestion bulk (MER-26).
 // Flux : démarrage (abonnement webhook → garde 1-bulk/shop → bulkOperationRunQuery), puis
@@ -75,10 +78,14 @@ export async function ensureBulkFinishWebhook(
       `Création du webhook bulk échouée : ${response.errors.map((e) => e.message).join("; ")}`,
     );
   }
-  const userErrors = response.data?.webhookSubscriptionCreate?.userErrors ?? [];
-  if (userErrors.length > 0) {
+  // On tolère les doublons : si le webhook existe déjà (sur une URL normalisée différemment,
+  // ou course concurrente), le rejeter en 502 casserait l'ingest alors que la livraison marche.
+  const realErrors = (
+    response.data?.webhookSubscriptionCreate?.userErrors ?? []
+  ).filter((error) => !isDuplicateWebhookError(error.message));
+  if (realErrors.length > 0) {
     throw new Error(
-      `Création du webhook bulk rejetée : ${userErrors.map((e) => e.message).join("; ")}`,
+      `Création du webhook bulk rejetée : ${realErrors.map((e) => e.message).join("; ")}`,
     );
   }
 }

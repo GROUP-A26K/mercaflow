@@ -86,10 +86,15 @@ export function parseSubscribedTopics(
   return subscribed;
 }
 
-// Un abonnement déjà présent (course entre deux ingestions concurrentes) n'est PAS une
-// erreur : l'objectif idempotent est atteint. On tolère ces userErrors de doublon.
+// Un abonnement déjà présent (course concurrente, ou abonnement sur une autre URL) n'est PAS
+// une erreur de création : l'objectif idempotent est atteint. On tolère ces userErrors.
 const DUPLICATE_TOPIC_ERROR =
   /already been taken|already taken|already exists/i;
+
+/** Vrai si un userError Shopify signale un abonnement webhook déjà existant (doublon). */
+export function isDuplicateWebhookError(message: string): boolean {
+  return DUPLICATE_TOPIC_ERROR.test(message);
+}
 
 /** Issue d'une tentative de création : abonnement créé, ou doublon toléré (existe déjà). */
 export type WebhookCreateOutcome = "created" | "duplicate";

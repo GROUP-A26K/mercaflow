@@ -83,6 +83,19 @@ const INGEST_TOPICS: Record<string, IngestTopic> = {
 const REVOKE_TOPIC = "app/uninstalled";
 
 /**
+ * Domaine `*.myshopify.com` porté par le CORPS (signé HMAC) d'un webhook `app/uninstalled`.
+ * On révoque par ce domaine, PAS par l'en-tête `x-shopify-shop-domain` (non signé) : sinon un
+ * rejeu d'un webhook valide avec un en-tête falsifié révoquerait la connexion d'un autre tenant.
+ * Renvoie null si le champ est absent/non-string.
+ */
+export function shopDomainFromUninstallPayload(
+  payload: WebhookPayload,
+): string | null {
+  const domain = payload.myshopify_domain;
+  return typeof domain === "string" && domain.length > 0 ? domain : null;
+}
+
+/**
  * Classe un topic Shopify (`X-Shopify-Topic`) en action. Un topic inconnu ou absent est
  * `ignore` : on acquitte (200) sans traiter, plutôt que de renvoyer une erreur qui
  * déclencherait des retries Shopify inutiles.

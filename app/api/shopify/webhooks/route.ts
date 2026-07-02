@@ -8,6 +8,7 @@ import {
 import { shopifyConfig } from "@/lib/shopify/config";
 import {
   classifyWebhookTopic,
+  shopDomainFromUninstallPayload,
   toRawRecordFromWebhook,
   UnmappableWebhookPayloadError,
 } from "@/lib/shopify/webhook-events";
@@ -47,17 +48,7 @@ export async function POST(req: NextRequest) {
   const topic = req.headers.get("x-shopify-topic");
   const action = classifyWebhookTopic(topic);
 
-  // Désinstallation : révoquer la connexion (statut + token) et arrêter les syncs. Pas de
-  // payload à persister. Idempotent côté DAL (une désinstallation peut être renvoyée).
-  if (action.kind === "revoke") {
-    await revokeConnectionsForShop(shopDomain);
-    return NextResponse.json(
-      { ok: true, revoked: shopDomain },
-      { status: 200 },
-    );
-  }
-
-  // Topic non écouté : acquitter sans traiter (éviter les retries Shopify).
+  // Topic non écouté : acquitter sans traiter (éviter les retries Shopify). Avant tout parse.
   if (action.kind === "ignore") {
     return NextResponse.json({ ok: true, ignored: topic }, { status: 200 });
   }
@@ -71,6 +62,22 @@ export async function POST(req: NextRequest) {
     payload = parsed as Record<string, unknown>;
   } catch {
     return NextResponse.json({ error: "Payload invalide" }, { status: 400 });
+  }
+
+  // Désinstallation : révoquer la connexion (statut + token) et arrêter les syncs. On révoque
+  // par le domaine porté par le CORPS (signé HMAC), PAS par l'en-tête `x-shopify-shop-domain`
+  // (non signé) — sinon un rejeu avec en-tête falsifié révoquerait un autre tenant.
+  // Idempotent côté DAL (une désinstallation peut être renvoyée).
+  if (action.kind === "revoke") {
+    const target = shopDomainFromUninstallPayload(payload);
+    if (!target) {
+      return NextResponse.json(
+        { error: "Domaine de désinstallation manquant (myshopify_domain)" },
+        { status: 400 },
+      );
+    }
+    await revokeConnectionsForShop(target);
+    return NextResponse.json({ ok: true, revoked: target }, { status: 200 });
   }
 
   // Fan-out : un même domaine peut être connecté par plusieurs orgs → une ligne raw_records
