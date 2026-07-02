@@ -4,6 +4,7 @@ vi.mock("server-only", () => ({}));
 
 import {
   classifyWebhookTopic,
+  payloadMatchesTopic,
   shopDomainFromUninstallPayload,
   toRawRecordFromWebhook,
   UnmappableWebhookPayloadError,
@@ -54,6 +55,53 @@ describe("shopDomainFromUninstallPayload", () => {
   it("renvoie null si myshopify_domain absent ou non-string", () => {
     expect(shopDomainFromUninstallPayload({ id: 1 })).toBeNull();
     expect(shopDomainFromUninstallPayload({ myshopify_domain: 42 })).toBeNull();
+  });
+});
+
+describe("payloadMatchesTopic", () => {
+  it("accepte un vrai payload produit create/update (GID Product)", () => {
+    const payload = {
+      id: 123,
+      admin_graphql_api_id: "gid://shopify/Product/123",
+      title: "Sneaker",
+    };
+    expect(payloadMatchesTopic("products/update", payload)).toBe(true);
+    expect(payloadMatchesTopic("products/create", payload)).toBe(true);
+  });
+
+  it("accepte un delete produit minimal { id }", () => {
+    expect(payloadMatchesTopic("products/delete", { id: 456 })).toBe(true);
+  });
+
+  it("accepte un inventory_levels/update valide", () => {
+    expect(
+      payloadMatchesTopic("inventory_levels/update", {
+        inventory_item_id: 1,
+        location_id: 2,
+      }),
+    ).toBe(true);
+  });
+
+  it("rejette un corps boutique (uninstall) rejoué en topic d'ingestion", () => {
+    const shopBody = {
+      id: 999,
+      myshopify_domain: "acme.myshopify.com",
+      email: "a@b.c",
+    };
+    expect(payloadMatchesTopic("products/update", shopBody)).toBe(false);
+    expect(payloadMatchesTopic("products/delete", shopBody)).toBe(false);
+    expect(payloadMatchesTopic("inventory_levels/update", shopBody)).toBe(
+      false,
+    );
+  });
+
+  it("rejette un produit create/update sans GID Product", () => {
+    expect(payloadMatchesTopic("products/update", { id: 123 })).toBe(false);
+    expect(
+      payloadMatchesTopic("products/update", {
+        admin_graphql_api_id: "gid://shopify/Shop/1",
+      }),
+    ).toBe(false);
   });
 });
 

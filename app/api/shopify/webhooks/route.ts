@@ -8,6 +8,7 @@ import {
 import { shopifyConfig } from "@/lib/shopify/config";
 import {
   classifyWebhookTopic,
+  payloadMatchesTopic,
   shopDomainFromUninstallPayload,
   toRawRecordFromWebhook,
   UnmappableWebhookPayloadError,
@@ -78,6 +79,19 @@ export async function POST(req: NextRequest) {
     }
     await revokeConnectionsForShop(target);
     return NextResponse.json({ ok: true, revoked: target }, { status: 200 });
+  }
+
+  // Défense en profondeur : l'en-tête `X-Shopify-Topic` n'est PAS signé. On refuse d'ingérer
+  // un corps qui ne correspond pas à la forme attendue du topic (ex. corps `app/uninstalled`
+  // rejoué en `products/update`) → pas de raw_records bidons. Ack sans retry (rejeu hostile).
+  if (!payloadMatchesTopic(topic as string, payload)) {
+    console.warn(
+      `Webhook ${topic} (${shopDomain}) : corps incohérent avec le topic — ignoré.`,
+    );
+    return NextResponse.json(
+      { ok: true, skipped: "topic_payload_mismatch" },
+      { status: 200 },
+    );
   }
 
   // Fan-out : un même domaine peut être connecté par plusieurs orgs → une ligne raw_records

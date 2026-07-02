@@ -80,12 +80,22 @@ export async function ensureBulkFinishWebhook(
   }
   // On tolère les doublons : si le webhook existe déjà (sur une URL normalisée différemment,
   // ou course concurrente), le rejeter en 502 casserait l'ingest alors que la livraison marche.
-  const realErrors = (
-    response.data?.webhookSubscriptionCreate?.userErrors ?? []
-  ).filter((error) => !isDuplicateWebhookError(error.message));
+  const userErrors = response.data?.webhookSubscriptionCreate?.userErrors ?? [];
+  const realErrors = userErrors.filter(
+    (error) => !isDuplicateWebhookError(error.message),
+  );
   if (realErrors.length > 0) {
     throw new Error(
       `Création du webhook bulk rejetée : ${realErrors.map((e) => e.message).join("; ")}`,
+    );
+  }
+  // Doublon alors que `parseExistingBulkFinishWebhook` ne l'a pas vu à notre URL → il pointe
+  // une autre URL (ou course concurrente) : on avertit sans casser l'ingest (livraison à
+  // vérifier si les webhooks bulk n'arrivent pas ici).
+  if (userErrors.length > 0) {
+    console.warn(
+      `Webhook bulk_operations/finish : abonnement déjà existant (autre URL que ${callbackUrl} ` +
+        `ou course concurrente) — vérifier la livraison si l'ingestion ne se termine pas.`,
     );
   }
 }

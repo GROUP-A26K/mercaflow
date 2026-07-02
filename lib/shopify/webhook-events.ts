@@ -110,6 +110,40 @@ export function classifyWebhookTopic(
   return { kind: "ignore" };
 }
 
+/**
+ * Vérifie que le CORPS (signé HMAC) correspond au topic annoncé par l'en-tête `X-Shopify-Topic`
+ * (NON signé). Sans ce contrôle, un rejeu d'un webhook valide avec un en-tête de topic falsifié
+ * (ex. corps `app/uninstalled` envoyé en `products/update`) entrerait dans la branche ingestion
+ * et écrirait des `raw_records` bidons. On exige donc une forme de payload propre au topic :
+ *  - un objet boutique (`myshopify_domain`) n'est JAMAIS un événement produit/inventaire ;
+ *  - create/update produit → `admin_graphql_api_id` = GID Product (présent dans ces payloads) ;
+ *  - delete produit → corps minimal `{ id }` (Shopify n'y met pas d'`admin_graphql_api_id`) ;
+ *  - inventory_levels/update → `inventory_item_id` + `location_id`.
+ */
+export function payloadMatchesTopic(
+  topic: string,
+  payload: WebhookPayload,
+): boolean {
+  // Un objet boutique (corps de `app/uninstalled`) n'est jamais un événement d'ingestion.
+  if (typeof payload.myshopify_domain === "string") return false;
+  const scalar = (v: unknown): v is number | string =>
+    typeof v === "number" || typeof v === "string";
+  switch (topic) {
+    case "products/create":
+    case "products/update":
+      return (
+        typeof payload.admin_graphql_api_id === "string" &&
+        payload.admin_graphql_api_id.startsWith("gid://shopify/Product/")
+      );
+    case "products/delete":
+      return scalar(payload.id);
+    case "inventory_levels/update":
+      return scalar(payload.inventory_item_id) && scalar(payload.location_id);
+    default:
+      return false;
+  }
+}
+
 export interface WebhookRawRecordParams {
   orgId: string;
   connectionId: string;
