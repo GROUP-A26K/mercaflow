@@ -32,17 +32,15 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Origine publique : derrière le tunnel Cloudflare (dev) / proxy Vercel (prod),
-  // `nextUrl`/`request.url` pointent sur le socket local (`localhost:3000`) → on résout
-  // l'hôte public via les en-têtes de forwarding, pour les redirections ET le redirect_uri.
-  const origin = resolvePublicOrigin(request.headers, {
-    protocol: request.nextUrl.protocol,
-    host: request.nextUrl.host,
-  });
-
   const { orgId } = await auth();
   if (!orgId) {
-    return NextResponse.redirect(`${origin}/select-organization`);
+    // Redirection interne RELATIVE : le navigateur la résout contre l'origine publique
+    // qu'il a demandée (le tunnel/proxy masque l'hôte réel côté serveur). Pas d'hôte
+    // dérivé d'en-têtes → aucun risque d'open-redirect.
+    return new NextResponse(null, {
+      status: 307,
+      headers: { Location: "/select-organization" },
+    });
   }
 
   const shop = request.nextUrl.searchParams.get("shop");
@@ -54,6 +52,13 @@ export async function GET(request: NextRequest) {
   }
 
   const config = shopifyConfig();
+  // `redirect_uri` doit être ABSOLU et matcher la whitelist Shopify → on reconstruit
+  // l'origine publique depuis les en-têtes de forwarding (`nextUrl` = socket local
+  // derrière le tunnel/proxy). La whitelist Shopify borne toute manipulation d'hôte.
+  const origin = resolvePublicOrigin(request.headers, {
+    protocol: request.nextUrl.protocol,
+    host: request.nextUrl.host,
+  });
   const redirectUri = `${origin}${SHOPIFY_REDIRECT_PATH}`;
   const nonce = randomBytes(16).toString("hex");
 

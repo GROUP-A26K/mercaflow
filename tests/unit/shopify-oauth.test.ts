@@ -45,6 +45,16 @@ describe("resolvePublicOrigin", () => {
     );
   });
 
+  it("prend le premier saut d'une chaîne X-Forwarded multi-proxy", () => {
+    const headers = new Headers({
+      "x-forwarded-host": "shopify-dev.mercaflow.ai, internal-lb.local",
+      "x-forwarded-proto": "https, http",
+    });
+    expect(resolvePublicOrigin(headers, fallback)).toBe(
+      "https://shopify-dev.mercaflow.ai",
+    );
+  });
+
   it("retombe sur l'en-tête Host quand X-Forwarded-Host est absent", () => {
     const headers = new Headers({ host: "app.mercaflow.ai" });
     expect(resolvePublicOrigin(headers, fallback)).toBe(

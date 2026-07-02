@@ -12,8 +12,12 @@ https://shopify-dev.mercaflow.ai  →  http://localhost:3000
 redémarrage → il faut re-créer + release une **version** de l'App Shopify (App URL +
 redirect) à chaque fois. Avec un hostname stable, on configure Shopify **une seule fois**.
 
-> Aucun changement du code OAuth : `app/api/shopify/install/route.ts` dérive le
-> `redirect_uri` de `request.nextUrl.origin` → il suit automatiquement le hostname.
+> Derrière le tunnel (comme derrière le proxy Vercel), `request.nextUrl.origin` /
+> `request.url` reflètent le **socket local** (`localhost:3000`), pas l'hôte public.
+> Le code OAuth en tient compte : le `redirect_uri` envoyé à Shopify est reconstruit
+> depuis `X-Forwarded-Host`/`Host` via `resolvePublicOrigin()` (`lib/shopify/oauth.ts`),
+> et les redirections internes utilisent des `Location` **relatives**. Ne « simplifie »
+> donc pas ça en `nextUrl.origin` : ça recasserait le flow derrière le tunnel.
 
 ## Usage quotidien
 

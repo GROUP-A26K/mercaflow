@@ -6,7 +6,6 @@ import { decryptToken } from "@/lib/shopify/crypto";
 import {
   exchangeCodeForToken,
   isValidShopDomain,
-  resolvePublicOrigin,
   verifyShopifyHmac,
 } from "@/lib/shopify/oauth";
 
@@ -87,15 +86,12 @@ export async function GET(request: NextRequest) {
     scope,
   });
 
-  // Origine publique (le tunnel/proxy masque l'hôte réel dans `request.url` →
-  // `https://localhost:3000` sinon, d'où une redirection cassée côté navigateur).
-  const origin = resolvePublicOrigin(request.headers, {
-    protocol: request.nextUrl.protocol,
-    host: request.nextUrl.host,
+  // Redirection interne RELATIVE : résolue par le navigateur contre l'origine publique
+  // qu'il a demandée → robuste derrière le tunnel/proxy, sans hôte dérivé d'en-têtes.
+  const response = new NextResponse(null, {
+    status: 307,
+    headers: { Location: "/dashboard?shopify=connected" },
   });
-  const response = NextResponse.redirect(
-    `${origin}/dashboard?shopify=connected`,
-  );
   // Le cookie a été posé avec path=/api/shopify → le supprimer au MÊME path.
   response.cookies.set(STATE_COOKIE, "", {
     httpOnly: true,

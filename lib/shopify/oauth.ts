@@ -17,18 +17,27 @@ export function isValidShopDomain(
  * Origine publique de l'app derrière un reverse-proxy / tunnel (Cloudflare, Vercel).
  * `request.nextUrl.origin` reflète le socket d'écoute (ex. `localhost:3000`) et NON le
  * `Host` public → on reconstruit l'origine depuis `X-Forwarded-Host`/`Host` (+ proto),
- * avec repli sur l'origine locale. Sécurité : ces en-têtes sont posés par le proxy de
- * confiance, et le `redirect_uri` résultant DOIT correspondre à la whitelist Shopify
- * (qui borne toute manipulation d'hôte).
+ * avec repli sur l'origine locale.
+ *
+ * Réservé à la construction du `redirect_uri` Shopify (URL ABSOLUE requise), qui DOIT
+ * correspondre à la whitelist Shopify — ce qui borne toute manipulation d'hôte. Les
+ * redirections internes de l'app utilisent, elles, des `Location` RELATIVES (pas d'hôte
+ * dérivé d'en-têtes → pas d'open-redirect).
  */
 export function resolvePublicOrigin(
   headers: Headers,
   fallback: { protocol: string; host: string },
 ): string {
+  // Chaîne multi-proxy : `X-Forwarded-*` peut valoir « client, proxy1, … » → premier saut.
+  const firstHop = (value: string | null): string | undefined =>
+    value?.split(",")[0]?.trim() || undefined;
   const proto =
-    headers.get("x-forwarded-proto") ?? fallback.protocol.replace(/:$/, "");
+    firstHop(headers.get("x-forwarded-proto")) ??
+    fallback.protocol.replace(/:$/, "");
   const host =
-    headers.get("x-forwarded-host") ?? headers.get("host") ?? fallback.host;
+    firstHop(headers.get("x-forwarded-host")) ??
+    headers.get("host") ??
+    fallback.host;
   return `${proto}://${host}`;
 }
 
