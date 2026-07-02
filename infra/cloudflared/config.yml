@@ -1,0 +1,21 @@
+# Tunnel Cloudflare nommé « mercaflow-dev » (MER-36).
+#
+# Expose le dev server local sur un hostname STABLE (https://shopify-dev.mercaflow.ai)
+# → la version de l'App Shopify (App URL + redirect) se configure UNE SEULE FOIS,
+# contrairement aux quick-tunnels `trycloudflare.com` dont l'URL change à chaque run.
+#
+# Lancer via `make tunnel`. Le hostname est routé sur ce tunnel via un CNAME créé par
+# `cloudflared tunnel route dns` (zone mercaflow.ai).
+#
+# Le credentials JSON du tunnel vit dans ~/.cloudflared/<UUID>.json (machine-local,
+# jamais commité — cf. `*.pem`/discipline ; backup dans Infisical /cloudflare). cloudflared
+# le résout automatiquement par l'UUID ci-dessous. Bootstrap d'une nouvelle machine et
+# config Shopify one-time : voir docs/shopify-dev-tunnel.md.
+tunnel: 0289f897-edae-4e5d-b0ae-7c4f27a5837c
+
+ingress:
+  # Trafic public du hostname stable → dev server Next.js local.
+  - hostname: shopify-dev.mercaflow.ai
+    service: http://localhost:3000
+  # Catch-all obligatoire : tout le reste renvoie 404.
+  - service: http_status:404
