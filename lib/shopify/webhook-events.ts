@@ -1,0 +1,182 @@
+import "server-only";
+
+import { contentHash, type RawRecordInsert } from "@/lib/shopify/raw-record";
+
+// Traitement des webhooks incrémentaux Shopify (MER-27).
+// Contrairement à l'ingestion bulk (payload = nœud GraphQL avec GID en `id`), les webhooks
+// REST portent un payload JSON « produit » / « inventory level » où le GID vit dans
+// `admin_graphql_api_id`. On mappe chaque topic vers une action : ingérer (append-only dans
+// raw_records), révoquer la connexion (désinstallation), ou ignorer (topic non géré → on
+// acquitte quand même, pour éviter les retries Shopify sur des événements qu'on n'écoute pas).
+
+export type WebhookAction =
+  | { kind: "ingest"; resourceType: string }
+  | { kind: "revoke" }
+  | { kind: "ignore" };
+
+type WebhookPayload = Record<string, unknown>;
+
+/**
+ * Payload de webhook dont on ne peut extraire aucun identifiant exploitable. Distincte des
+ * erreurs inattendues : le routeur l'acquitte (200) sans demander de retry (il échouerait à
+ * l'identique), là où toute AUTRE erreur doit remonter (500 → Shopify retente, échec visible).
+ */
+export class UnmappableWebhookPayloadError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UnmappableWebhookPayloadError";
+  }
+}
+
+interface IngestTopic {
+  resourceType: string;
+  externalId: (payload: WebhookPayload) => string;
+}
+
+/** Identifiant exploitable : nombre, ou chaîne NON vide (une chaîne vide donnerait un GID nu). */
+function isUsableId(value: unknown): value is number | string {
+  return (
+    typeof value === "number" || (typeof value === "string" && value !== "")
+  );
+}
+
+/** GID d'un produit : `admin_graphql_api_id` si présent, sinon composé depuis l'id REST. */
+function productGid(payload: WebhookPayload): string {
+  const gid = payload.admin_graphql_api_id;
+  if (typeof gid === "string" && gid.length > 0) return gid;
+  const id = payload.id;
+  if (isUsableId(id)) {
+    return `gid://shopify/Product/${id}`;
+  }
+  throw new UnmappableWebhookPayloadError(
+    "Webhook produit sans identifiant (id / admin_graphql_api_id)",
+  );
+}
+
+/**
+ * Clé stable d'un niveau d'inventaire. On privilégie `admin_graphql_api_id` ; à défaut on
+ * compose le GID `InventoryLevel` canonique de Shopify — `location_id` dans le chemin,
+ * `inventory_item_id` en query — pour que le fallback COÏNCIDE avec le GID réel et ne crée
+ * pas un second external_id qui contournerait la dédup / les jointures de normalisation.
+ */
+function inventoryLevelKey(payload: WebhookPayload): string {
+  const gid = payload.admin_graphql_api_id;
+  if (typeof gid === "string" && gid.length > 0) return gid;
+  const item = payload.inventory_item_id;
+  const location = payload.location_id;
+  if (isUsableId(item) && isUsableId(location)) {
+    return `gid://shopify/InventoryLevel/${location}?inventory_item_id=${item}`;
+  }
+  throw new UnmappableWebhookPayloadError(
+    "Webhook inventory_levels/update sans clé (inventory_item_id / location_id)",
+  );
+}
+
+// Topics dont on ingère le payload dans raw_records (append-only). `products/delete` est
+// ingéré comme les autres : la couche de normalisation (MER-28) interprétera l'état courant
+// à partir des observations successives (le raw reste un journal, pas un état).
+const INGEST_TOPICS: Record<string, IngestTopic> = {
+  "products/create": { resourceType: "product", externalId: productGid },
+  "products/update": { resourceType: "product", externalId: productGid },
+  "products/delete": { resourceType: "product", externalId: productGid },
+  "inventory_levels/update": {
+    resourceType: "inventory_level",
+    externalId: inventoryLevelKey,
+  },
+};
+
+const REVOKE_TOPIC = "app/uninstalled";
+
+/**
+ * Domaine `*.myshopify.com` porté par le CORPS (signé HMAC) d'un webhook `app/uninstalled`.
+ * On révoque par ce domaine, PAS par l'en-tête `x-shopify-shop-domain` (non signé) : sinon un
+ * rejeu d'un webhook valide avec un en-tête falsifié révoquerait la connexion d'un autre tenant.
+ * Renvoie null si le champ est absent/non-string.
+ */
+export function shopDomainFromUninstallPayload(
+  payload: WebhookPayload,
+): string | null {
+  const domain = payload.myshopify_domain;
+  return typeof domain === "string" && domain.length > 0 ? domain : null;
+}
+
+/**
+ * Classe un topic Shopify (`X-Shopify-Topic`) en action. Un topic inconnu ou absent est
+ * `ignore` : on acquitte (200) sans traiter, plutôt que de renvoyer une erreur qui
+ * déclencherait des retries Shopify inutiles.
+ */
+export function classifyWebhookTopic(
+  topic: string | null | undefined,
+): WebhookAction {
+  if (!topic) return { kind: "ignore" };
+  if (topic === REVOKE_TOPIC) return { kind: "revoke" };
+  const ingest = INGEST_TOPICS[topic];
+  if (ingest) return { kind: "ingest", resourceType: ingest.resourceType };
+  return { kind: "ignore" };
+}
+
+/**
+ * Vérifie que le CORPS (signé HMAC) correspond au topic annoncé par l'en-tête `X-Shopify-Topic`
+ * (NON signé). Sans ce contrôle, un rejeu d'un webhook valide avec un en-tête de topic falsifié
+ * (ex. corps `app/uninstalled` envoyé en `products/update`) entrerait dans la branche ingestion
+ * et écrirait des `raw_records` bidons. On exige donc une forme de payload propre au topic :
+ *  - un objet boutique (`myshopify_domain`) n'est JAMAIS un événement produit/inventaire ;
+ *  - create/update produit → `admin_graphql_api_id` = GID Product (présent dans ces payloads) ;
+ *  - delete produit → corps minimal `{ id }` (Shopify n'y met pas d'`admin_graphql_api_id`) ;
+ *  - inventory_levels/update → `inventory_item_id` + `location_id`.
+ */
+export function payloadMatchesTopic(
+  topic: string,
+  payload: WebhookPayload,
+): boolean {
+  // Un objet boutique (corps de `app/uninstalled`) n'est jamais un événement d'ingestion.
+  if (typeof payload.myshopify_domain === "string") return false;
+  switch (topic) {
+    case "products/create":
+    case "products/update":
+      // `gid://shopify/Product/<n>` : la présence d'un id après le préfixe est requise.
+      return (
+        typeof payload.admin_graphql_api_id === "string" &&
+        payload.admin_graphql_api_id.length > "gid://shopify/Product/".length &&
+        payload.admin_graphql_api_id.startsWith("gid://shopify/Product/")
+      );
+    case "products/delete":
+      return isUsableId(payload.id);
+    case "inventory_levels/update":
+      return (
+        isUsableId(payload.inventory_item_id) && isUsableId(payload.location_id)
+      );
+    default:
+      return false;
+  }
+}
+
+export interface WebhookRawRecordParams {
+  orgId: string;
+  connectionId: string;
+  topic: string;
+  payload: WebhookPayload;
+}
+
+/**
+ * Construit une ligne `raw_records` (append-only) depuis un webhook incrémental.
+ * `external_id` = GID Shopify, `content_hash` = hash stable du payload (un payload identique
+ * réémis → no-op via la contrainte unique de la table). Lève si le topic n'est pas un topic
+ * d'ingestion — le routeur doit l'avoir classé avec `classifyWebhookTopic` au préalable.
+ */
+export function toRawRecordFromWebhook(
+  params: WebhookRawRecordParams,
+): RawRecordInsert {
+  const topic = INGEST_TOPICS[params.topic];
+  if (!topic) {
+    throw new Error(`Topic webhook non ingérable : ${params.topic}`);
+  }
+  return {
+    org_id: params.orgId,
+    connection_id: params.connectionId,
+    resource_type: topic.resourceType,
+    external_id: topic.externalId(params.payload),
+    payload: params.payload,
+    content_hash: contentHash(params.payload),
+  };
+}

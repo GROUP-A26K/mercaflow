@@ -120,6 +120,49 @@ export async function getActiveConnectionForOrg(
   return mapConnection(rows[0]);
 }
 
+/**
+ * Toutes les connexions ACTIVES d'un domaine de boutique (MER-27, fan-out webhooks).
+ * Un webhook Shopify ne porte pas d'org : on rafraîchit chaque connexion active de ce
+ * domaine (un même domaine peut être connecté par plusieurs orgs — cf. ADR tenancy).
+ * Service-role : pas de session Clerk sur un webhook machine-à-machine.
+ */
+export async function getActiveConnectionsForShop(
+  shopDomain: string,
+): Promise<ShopifyConnection[]> {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("shopify_connections")
+    .select(CONNECTION_COLUMNS)
+    .eq("shop_domain", shopDomain)
+    .eq("status", "active");
+  if (error) {
+    throw new Error(
+      `Lecture des connexions Shopify du domaine échouée : ${error.message}`,
+    );
+  }
+  return ((data ?? []) as ConnectionRow[]).map(mapConnection);
+}
+
+/**
+ * Révoque toutes les connexions d'un domaine (MER-27, webhook `app/uninstalled`) : statut
+ * `revoked` + token effacé. Arrête de fait les syncs (le webhook bulk refuse déjà une
+ * connexion non-active/sans token). Idempotent (une désinstallation peut être renvoyée).
+ */
+export async function revokeConnectionsForShop(
+  shopDomain: string,
+): Promise<void> {
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("shopify_connections")
+    .update({ status: "revoked", access_token_enc: null })
+    .eq("shop_domain", shopDomain);
+  if (error) {
+    throw new Error(
+      `Révocation des connexions Shopify du domaine échouée : ${error.message}`,
+    );
+  }
+}
+
 export interface RecordBulkOperationParams {
   bulkOperationId: string;
   orgId: string;

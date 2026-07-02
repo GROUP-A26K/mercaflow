@@ -25,6 +25,10 @@ import {
 } from "@/lib/shopify/bulk";
 import { streamJsonlNodes } from "@/lib/shopify/jsonl";
 import { toRawRecord, type RawRecordInsert } from "@/lib/shopify/raw-record";
+import {
+  ensureIncrementalWebhooks,
+  isDuplicateWebhookError,
+} from "@/lib/shopify/webhook-subscriptions";
 
 // Orchestration de l'ingestion bulk (MER-26).
 // Flux : démarrage (abonnement webhook → garde 1-bulk/shop → bulkOperationRunQuery), puis
@@ -74,10 +78,24 @@ export async function ensureBulkFinishWebhook(
       `Création du webhook bulk échouée : ${response.errors.map((e) => e.message).join("; ")}`,
     );
   }
+  // On tolère les doublons : si le webhook existe déjà (sur une URL normalisée différemment,
+  // ou course concurrente), le rejeter en 502 casserait l'ingest alors que la livraison marche.
   const userErrors = response.data?.webhookSubscriptionCreate?.userErrors ?? [];
-  if (userErrors.length > 0) {
+  const realErrors = userErrors.filter(
+    (error) => !isDuplicateWebhookError(error.message),
+  );
+  if (realErrors.length > 0) {
     throw new Error(
-      `Création du webhook bulk rejetée : ${userErrors.map((e) => e.message).join("; ")}`,
+      `Création du webhook bulk rejetée : ${realErrors.map((e) => e.message).join("; ")}`,
+    );
+  }
+  // Doublon alors que `parseExistingBulkFinishWebhook` ne l'a pas vu à notre URL → il pointe
+  // une autre URL (ou course concurrente) : on avertit sans casser l'ingest (livraison à
+  // vérifier si les webhooks bulk n'arrivent pas ici).
+  if (userErrors.length > 0) {
+    console.warn(
+      `Webhook bulk_operations/finish : abonnement déjà existant (autre URL que ${callbackUrl} ` +
+        `ou course concurrente) — vérifier la livraison si l'ingestion ne se termine pas.`,
     );
   }
 }
@@ -85,11 +103,17 @@ export async function ensureBulkFinishWebhook(
 export interface StartIngestionParams {
   client: AdminGraphQLClient;
   callbackUrl: string;
+  /**
+   * URL du endpoint des webhooks incrémentaux (MER-27). Si fournie, on abonne aussi les
+   * topics products/inventory/uninstalled → le graph reste frais sans re-scan complet.
+   */
+  incrementalCallbackUrl?: string;
 }
 
 /**
- * Démarre l'import initial du catalogue : abonne le webhook, vérifie qu'aucune bulk query
- * n'est en cours (contrainte Shopify « 1 bulk query / shop »), puis lance la bulk query.
+ * Démarre l'import initial du catalogue : abonne les webhooks (finish bulk + incrémentaux),
+ * vérifie qu'aucune bulk query n'est en cours (contrainte Shopify « 1 bulk query / shop »),
+ * puis lance la bulk query.
  */
 export async function startCatalogIngestion(
   params: StartIngestionParams,
@@ -101,6 +125,16 @@ export async function startCatalogIngestion(
   );
   if (current && isBulkOperationRunning(current.status)) {
     throw new BulkAlreadyRunningError();
+  }
+
+  // APRÈS le pré-check « 1 bulk / shop » : sinon un échec d'abonnement incrémental sur le
+  // chemin « bulk déjà en cours » masquerait le BulkAlreadyRunningError (→ 409) attendu, et
+  // ferait des appels Shopify inutiles à chaque retry.
+  if (params.incrementalCallbackUrl) {
+    await ensureIncrementalWebhooks(
+      params.client,
+      params.incrementalCallbackUrl,
+    );
   }
 
   try {
