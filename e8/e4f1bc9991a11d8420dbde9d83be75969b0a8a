@@ -1,0 +1,39 @@
+lib/data/catalog.ts
+  s_418a6894af41f9::t_39a3344fd4ad1e 1-151,156-170
+  s_418a6894af41f9::t_3389d02619c448 152-155
+MEMORY.md
+  s_418a6894af41f9::t_e9048613f5f47f 134
+supabase/migrations/0004_attributes_unique.sql
+  s_418a6894af41f9::t_2a0fe752006add 1-9
+tests/unit/shopify-normalize.test.ts
+  s_418a6894af41f9::t_74954716f6bbb4 1-7,9,11-12,14-172,241-260
+  s_418a6894af41f9::t_47a4c726b64903 173-240
+  s_418a6894af41f9::t_f98d8c59b99074 8,10
+  s_418a6894af41f9::t_2b475cd9d66762 13
+app/api/shopify/webhooks/bulk-operations-finish/route.ts
+  s_418a6894af41f9::t_1ff9537d81523a 10
+  s_418a6894af41f9::t_c310fd50c8242e 102,104-111
+lib/shopify/normalize.ts
+  s_418a6894af41f9::t_6494df96a79814 223-237,240-256,260-265,269-271,281,284-287,293-304
+  s_418a6894af41f9::t_9fc65fec3a3602 1-2,8-222,305-332
+  s_418a6894af41f9::t_3389d02619c448 3-7,238-239,257-259,266-268,272-280,282-283,288-292
+lib/shopify/normalization.ts
+  s_418a6894af41f9::t_afe160040d1b87 1-8,13-42
+  s_418a6894af41f9::t_3389d02619c448 9-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "e8e4f1bc9991a11d8420dbde9d83be75969b0a8a",
+  "prompts": {},
+  "sessions": {
+    "s_418a6894af41f9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ea6c9e11-6196-4dca-b5cd-75422e94d2af",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jean-Baptiste Pavageau <jeanbaptiste@a26k.ch>"
+    }
+  }
+}
