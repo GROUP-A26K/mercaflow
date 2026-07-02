@@ -86,9 +86,12 @@ export async function GET(request: NextRequest) {
     scope,
   });
 
-  const response = NextResponse.redirect(
-    new URL("/dashboard?shopify=connected", request.url),
-  );
+  // Redirection interne RELATIVE : résolue par le navigateur contre l'origine publique
+  // qu'il a demandée → robuste derrière le tunnel/proxy, sans hôte dérivé d'en-têtes.
+  const response = new NextResponse(null, {
+    status: 307,
+    headers: { Location: "/dashboard?shopify=connected" },
+  });
   // Le cookie a été posé avec path=/api/shopify → le supprimer au MÊME path.
   response.cookies.set(STATE_COOKIE, "", {
     httpOnly: true,
