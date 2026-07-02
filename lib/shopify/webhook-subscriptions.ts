@@ -154,13 +154,13 @@ export async function ensureIncrementalWebhooks(
         callbackUrl,
       }),
     );
-    // Doublon détecté alors que le topic n'était pas listé à notre URL → il est abonné à une
-    // AUTRE URL (déploiement obsolète / mismatch). On avertit : les événements `topic`
-    // n'atteignent PAS cet endpoint tant que l'ancien abonnement n'est pas corrigé.
+    // Doublon : soit une course concurrente inoffensive sur la MÊME URL, soit un abonnement
+    // à une AUTRE URL (déploiement obsolète) → dans ce 2ᵉ cas les événements n'arrivent pas
+    // ici. Ambigu depuis cette réponse seule : on avertit sans affirmer une panne.
     if (outcome === "duplicate") {
       console.warn(
-        `Webhook ${topic} déjà abonné à une autre URL que ${callbackUrl} — ` +
-          `les événements ${topic} n'atteignent pas cet endpoint.`,
+        `Webhook ${topic} : abonnement déjà existant (course concurrente sur ${callbackUrl}, ` +
+          `ou abonnement à une autre URL) — vérifier la livraison si les événements manquent.`,
       );
     }
   }
